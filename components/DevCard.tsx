@@ -2,16 +2,9 @@
 
 import clsx from "clsx";
 import { ShoppingCart, BookmarkPlus } from "lucide-react";
-import {
-  Card,
-  CardSource,
-  deficit,
-  GameState,
-  GEM_COLORS,
-  validate,
-} from "@/lib/engine";
+import { Card, CardSource, deficit, GameState, GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
-import { GEM_META, Pip } from "./gems";
+import { GEM_META, GemJewel, Pip } from "./gems";
 
 function humanTurn(game: GameState): boolean {
   const cur = game.players[game.currentPlayerIndex];
@@ -30,8 +23,9 @@ export default function DevCard({
   reservedView?: boolean;
 }) {
   const game = useGame((s) => s.game)!;
-  const purchase = useGame((s) => s.purchase);
+  const openPurchase = useGame((s) => s.openPurchase);
   const reserve = useGame((s) => s.reserve);
+  const replayActive = useGame((s) => s.replayActive);
 
   const me = game.players[game.currentPlayerIndex];
   const m = GEM_META[card.bonus];
@@ -41,36 +35,45 @@ export default function DevCard({
     ? validate(game, { type: "RESERVE", source: reserveSource })
     : { ok: false, reason: "" };
 
-  const canPlay = humanTurn(game);
+  const canPlay = humanTurn(game) && !replayActive;
   const affordable = canPlay && buyCheck.ok;
   const d = deficit(me, card);
 
   return (
     <div
       className={clsx(
-        "card-sheen relative flex h-[150px] flex-col justify-between rounded-xl border p-2.5 shadow-velvet transition animate-pop",
-        affordable
-          ? "border-gold/70 shadow-[0_0_0_1px_rgba(216,178,94,.5),0_8px_24px_rgba(0,0,0,.4)]"
-          : "border-line2",
+        "card-sheen relative flex h-[164px] flex-col overflow-hidden rounded-xl border p-2 shadow-velvet transition animate-pop",
+        affordable ? "border-gold/70 animate-affordable" : "border-line2",
       )}
-      style={{ background: `linear-gradient(160deg, ${m.hex}22, #1b1630 70%)` }}
+      style={{ background: `linear-gradient(157deg, ${m.hex}2e 0%, #211a35 55%, #1a1430 100%)` }}
     >
-      {/* top: prestige + bonus gem */}
-      <div className="flex items-start justify-between">
-        <span className="font-display text-2xl font-bold leading-none text-gold">
+      {/* decorative arch glow */}
+      <div
+        className="pointer-events-none absolute -top-10 right-[-30%] h-28 w-28 rounded-full opacity-30 blur-xl"
+        style={{ background: m.hex }}
+      />
+
+      {/* header: prestige + bonus jewel */}
+      <div className="relative flex items-start justify-between">
+        <span
+          className={clsx(
+            "grid h-8 w-8 place-items-center rounded-full font-display text-xl font-bold leading-none",
+            card.prestige > 0 ? "gold-pill text-gold" : "text-transparent",
+          )}
+        >
           {card.prestige > 0 ? card.prestige : ""}
         </span>
         <span
+          className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-gold/40"
+          style={{ background: "rgba(0,0,0,.25)" }}
           title={`보너스: ${m.label}`}
-          className="grid h-7 w-7 place-items-center rounded-full text-xs font-bold ring-1 ring-black/40"
-          style={{ background: m.hex, color: m.textDark ? "#1a1626" : "#fff" }}
         >
-          {m.short}
+          <GemJewel color={card.bonus} size={26} />
         </span>
       </div>
 
       {/* cost */}
-      <div className="flex flex-wrap gap-1">
+      <div className="relative mt-auto flex flex-col items-start gap-1">
         {GEM_COLORS.filter((c) => card.cost[c] > 0).map((c) => (
           <Pip key={c} color={c} n={card.cost[c]} />
         ))}
@@ -80,40 +83,41 @@ export default function DevCard({
       </div>
 
       {/* actions */}
-      <div className="flex gap-1.5">
-        <button
-          disabled={!affordable}
-          onClick={() => purchase(buySource)}
-          title={buyCheck.ok ? "구매" : buyCheck.reason}
-          className={clsx(
-            "flex flex-1 items-center justify-center gap-1 rounded-md py-1.5 text-[11px] font-semibold transition",
-            affordable
-              ? "bg-gradient-to-b from-[#e7cf86] to-[#cda14a] text-[#2a200a] hover:brightness-105"
-              : "cursor-not-allowed bg-panel text-ink-muted2 opacity-60",
-          )}
-        >
-          <ShoppingCart size={12} /> 구매
-        </button>
-        {reserveSource && !reservedView && (
+      {canPlay && (
+        <div className="relative mt-2 flex gap-1.5">
           <button
-            disabled={!canPlay || !reserveCheck.ok}
-            onClick={() => reserve(reserveSource)}
-            title={reserveCheck.ok ? "예약 (+골드)" : reserveCheck.reason}
+            disabled={!affordable}
+            onClick={() => openPurchase(buySource)}
+            title={buyCheck.ok ? "구매" : buyCheck.reason}
             className={clsx(
-              "flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition",
-              canPlay && reserveCheck.ok
-                ? "border border-line2 bg-panel text-ink hover:border-gold-soft"
-                : "cursor-not-allowed border border-line bg-panel text-ink-muted2 opacity-60",
+              "flex flex-1 items-center justify-center gap-1 rounded-md py-1.5 text-[11px] font-bold transition",
+              affordable
+                ? "bg-gradient-to-b from-[#e7cf86] to-[#cda14a] text-[#2a200a] hover:brightness-105"
+                : "cursor-not-allowed bg-black/30 text-ink-muted2",
             )}
           >
-            <BookmarkPlus size={12} />
+            <ShoppingCart size={12} /> 구매
           </button>
-        )}
-      </div>
+          {reserveSource && !reservedView && (
+            <button
+              disabled={!reserveCheck.ok}
+              onClick={() => reserve(reserveSource)}
+              title={reserveCheck.ok ? "예약 (골드 1개 획득)" : reserveCheck.reason}
+              className={clsx(
+                "flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition",
+                reserveCheck.ok
+                  ? "gold-frame bg-black/20 text-gold hover:bg-black/30"
+                  : "cursor-not-allowed border border-line bg-black/20 text-ink-muted2",
+              )}
+            >
+              <BookmarkPlus size={12} /> 예약
+            </button>
+          )}
+        </div>
+      )}
 
-      {/* deficit hint */}
       {canPlay && !affordable && d.gold > 0 && (
-        <span className="pointer-events-none absolute bottom-1 right-2 text-[9px] text-ink-muted2">
+        <span className="pointer-events-none absolute right-2 top-11 rounded bg-black/40 px-1 text-[9px] text-ink-muted2">
           부족 {d.gold}
         </span>
       )}
