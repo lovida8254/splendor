@@ -11,6 +11,7 @@ export interface Flight {
   x1: number;
   y1: number;
   delay: number;
+  kind?: "coin" | "card";
 }
 
 let seq = 0;

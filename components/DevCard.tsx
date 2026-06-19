@@ -5,6 +5,7 @@ import { ShoppingCart, BookmarkPlus } from "lucide-react";
 import { Card, CardSource, deficit, GameState, GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { GEM_META, GemJewel, Pip } from "./gems";
+import { PixelGem } from "./PixelGem";
 
 function humanTurn(game: GameState): boolean {
   const cur = game.players[game.currentPlayerIndex];
@@ -38,9 +39,14 @@ export default function DevCard({
   const canPlay = humanTurn(game) && !replayActive;
   const affordable = canPlay && buyCheck.ok;
   const d = deficit(me, card);
+  const cardAnchor =
+    buySource.from === "board"
+      ? `board-${buySource.level}-${buySource.slot}`
+      : `reserved-${buySource.cardId}`;
 
   return (
     <div
+      data-fly-card={cardAnchor}
       className={clsx(
         "card-sheen relative flex h-[164px] flex-col overflow-hidden rounded-xl border p-2 shadow-velvet transition animate-pop",
         affordable ? "border-gold/70 animate-affordable" : "border-line2",
@@ -52,6 +58,10 @@ export default function DevCard({
         className="pointer-events-none absolute -top-10 right-[-30%] h-28 w-28 rounded-full opacity-30 blur-xl"
         style={{ background: m.hex }}
       />
+      {/* pixel-art illustration */}
+      <div className="pointer-events-none absolute inset-x-0 top-6 grid place-items-center opacity-95">
+        <PixelGem color={card.bonus} size={50} />
+      </div>
 
       {/* header: prestige + bonus jewel */}
       <div className="relative flex items-start justify-between">

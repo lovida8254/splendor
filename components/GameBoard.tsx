@@ -11,6 +11,7 @@ import { PlayerSummary, ReservedDock } from "./PlayerPanel";
 import { DiscardModal, GameOverModal, NobleModal, PurchaseModal } from "./Modals";
 import ReplayBar from "./ReplayBar";
 import FlyLayer from "./FlyLayer";
+import Toasts from "./Toasts";
 
 export default function GameBoard() {
   const game = useGame((s) => s.game)!;
@@ -65,6 +66,7 @@ export default function GameBoard() {
       )}
       <ReplayBar />
       <FlyLayer />
+      <Toasts />
     </div>
   );
 }

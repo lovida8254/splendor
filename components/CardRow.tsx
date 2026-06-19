@@ -34,6 +34,7 @@ export default function CardRow({ level }: { level: CardLevel }) {
       <div className="grid min-w-[440px] grid-cols-[58px_repeat(4,minmax(86px,1fr))] gap-2 sm:min-w-0 sm:gap-2.5">
         {/* deck back */}
         <button
+          data-fly-card={`deck-${level}`}
           disabled={!canReserveDeck}
           onClick={() => reserve({ from: "deck", level })}
           title={deckReserveCheck.ok ? "맨 위 카드 블라인드 예약 (골드 획득)" : deckReserveCheck.reason || `레벨 ${level} 덱`}

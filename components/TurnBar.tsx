@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Loader2, Flag, Plus, AlertTriangle, Undo2, Clapperboard, Gauge } from "lucide-react";
+import { Loader2, Flag, Plus, AlertTriangle, Undo2, Clapperboard, Gauge, Volume2, VolumeX } from "lucide-react";
 import { useGame, Speed } from "@/store/gameStore";
 
 const SPEED_LABEL: Record<Speed, string> = { slow: "느림", normal: "보통", fast: "빠름" };
@@ -16,6 +16,8 @@ export default function TurnBar() {
   const enterReplay = useGame((s) => s.enterReplay);
   const speed = useGame((s) => s.speed);
   const setSpeed = useGame((s) => s.setSpeed);
+  const sound = useGame((s) => s.sound);
+  const setSound = useGame((s) => s.setSound);
   const actionsCount = useGame((s) => s.actions.length);
 
   const cur = game.players[game.currentPlayerIndex];
@@ -61,6 +63,13 @@ export default function TurnBar() {
           className="flex items-center gap-1 rounded-lg border border-line2 bg-panel px-2.5 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-panel-2"
         >
           <Gauge size={13} /> {SPEED_LABEL[speed]}
+        </button>
+        <button
+          onClick={() => setSound(!sound)}
+          title={sound ? "소리 끄기" : "소리 켜기"}
+          className="flex items-center gap-1 rounded-lg border border-line2 bg-panel px-2.5 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-panel-2"
+        >
+          {sound ? <Volume2 size={13} /> : <VolumeX size={13} />}
         </button>
         <button
           onClick={enterReplay}

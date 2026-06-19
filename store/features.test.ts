@@ -108,6 +108,37 @@ describe("수동 지불", () => {
   });
 });
 
+describe("예약 카드 구매 (골드 소진 후)", () => {
+  it("색 토큰이 충분하면 골드가 0이어도 예약 카드를 구매할 수 있다", () => {
+    useGame.getState().startGame([{ name: "H", isAI: false }, { name: "AI", isAI: true }]);
+    const reserved = makeCard({ id: "R", level: 2, prestige: 2, bonus: "blue", cost: { red: 3 } });
+    const game = makeState({
+      players: [makePlayer("P1", { reserved: [reserved], tokens: { red: 3, gold: 0 } as any }), makePlayer("P2")],
+      pool: { white: 0, blue: 0, green: 0, red: 0, black: 0, gold: 0 },
+    });
+    useGame.setState({ game, history: [game], actions: [] });
+
+    useGame.getState().openPurchase({ from: "reserved", cardId: "R" });
+    expect(useGame.getState().purchaseSource).not.toBeNull();
+    useGame.getState().confirmPurchase();
+    const g = useGame.getState().game!;
+    expect(g.players[0].reserved.length).toBe(0);
+    expect(g.players[0].bonuses.blue).toBe(1);
+  });
+
+  it("색 토큰도 골드도 부족하면 구매가 차단된다(정상 규칙)", () => {
+    useGame.getState().startGame([{ name: "H", isAI: false }, { name: "AI", isAI: true }]);
+    const reserved = makeCard({ id: "R", level: 2, bonus: "blue", cost: { red: 3 } });
+    const game = makeState({
+      players: [makePlayer("P1", { reserved: [reserved], tokens: { red: 2, gold: 0 } as any }), makePlayer("P2")],
+      pool: { white: 0, blue: 0, green: 0, red: 0, black: 0, gold: 0 },
+    });
+    useGame.setState({ game, history: [game], actions: [] });
+    useGame.getState().openPurchase({ from: "reserved", cardId: "R" });
+    expect(useGame.getState().purchaseSource).toBeNull(); // blocked, message set
+  });
+});
+
 describe("속도 설정", () => {
   it("setSpeed가 반영된다", () => {
     useGame.getState().setSpeed("fast");

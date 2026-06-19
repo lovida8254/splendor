@@ -13,6 +13,7 @@ interface Move {
   color: TokenColor;
   from: string; // CSS selector
   to: string;
+  kind?: "coin" | "card";
 }
 
 function centerOf(sel: string): { x: number; y: number } | null {
@@ -28,6 +29,14 @@ function supplySel(c: TokenColor): string {
 }
 function playerSel(idx: number, c: TokenColor): string {
   return `[data-fly="player-${idx}-${c}"]`;
+}
+function playerPanelSel(idx: number): string {
+  return `[data-fly="player-${idx}"]`;
+}
+function cardSourceSel(source: Extract<CardSource, { from: "board" | "deck" | "reserved" }>): string {
+  if (source.from === "board") return `[data-fly-card="board-${source.level}-${source.slot}"]`;
+  if (source.from === "deck") return `[data-fly-card="deck-${source.level}"]`;
+  return `[data-fly-card="reserved-${source.cardId}"]`;
 }
 
 function findCard(
@@ -46,7 +55,7 @@ function spawn(moves: Move[]) {
     const a = centerOf(m.from);
     const b = centerOf(m.to);
     if (a && b) {
-      flights.push({ color: m.color, x0: a.x, y0: a.y, x1: b.x, y1: b.y, delay: i * 70 });
+      flights.push({ color: m.color, x0: a.x, y0: a.y, x1: b.x, y1: b.y, delay: i * 70, kind: m.kind ?? "coin" });
       i++;
     }
   }
@@ -70,13 +79,22 @@ export function triggerFly(prev: GameState, action: Action): void {
       moves.push({ color: action.color, from: supplySel(action.color), to: playerSel(idx, action.color) });
       moves.push({ color: action.color, from: supplySel(action.color), to: playerSel(idx, action.color) });
       break;
-    case "RESERVE":
+    case "RESERVE": {
+      // reserved card flies to the player's panel
+      const card =
+        action.source.from === "board"
+          ? prev.board[action.source.level][action.source.slot]
+          : prev.decks[action.source.level][prev.decks[action.source.level].length - 1];
+      if (card) moves.push({ color: card.bonus, from: cardSourceSel(action.source), to: playerPanelSel(idx), kind: "card" });
       if (prev.pool.gold > 0)
         moves.push({ color: "gold", from: supplySel("gold"), to: playerSel(idx, "gold") });
       break;
+    }
     case "PURCHASE": {
       const card = findCard(prev, action.source, idx);
       if (!card) break;
+      // the bought card flies to the player's panel
+      moves.push({ color: card.bonus, from: cardSourceSel(action.source), to: playerPanelSel(idx), kind: "card" });
       const pay = action.payment ?? autoPayment(prev.players[idx], card);
       for (const c of TOKEN_COLORS) {
         for (let k = 0; k < (pay[c] ?? 0); k++) {

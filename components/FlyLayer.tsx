@@ -2,7 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { Flight, useFly } from "@/store/flyStore";
-import { CoinFace } from "./gems";
+import { CoinFace, GEM_META } from "./gems";
+import { PixelGem } from "./PixelGem";
+
+function CardChip({ color }: { color: Flight["color"] }) {
+  const m = GEM_META[color];
+  return (
+    <span
+      className="grid place-items-center rounded-md ring-1 ring-gold/40"
+      style={{
+        width: 34,
+        height: 46,
+        background: `linear-gradient(157deg, ${m.hex}55, #1a1430 75%)`,
+        boxShadow: "0 6px 14px rgba(0,0,0,.5)",
+      }}
+    >
+      <PixelGem color={color} size={26} />
+    </span>
+  );
+}
 
 function FlyToken({ f, onDone }: { f: Flight; onDone: () => void }) {
   const [moved, setMoved] = useState(false);
@@ -33,7 +51,7 @@ function FlyToken({ f, onDone }: { f: Flight; onDone: () => void }) {
         willChange: "transform, opacity",
       }}
     >
-      <CoinFace color={f.color} size={30} />
+      {f.kind === "card" ? <CardChip color={f.color} /> : <CoinFace color={f.color} size={30} />}
     </span>
   );
 }

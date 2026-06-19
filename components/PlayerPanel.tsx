@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Bot, User, Crown, BookMarked } from "lucide-react";
+import { Bot, User, Crown, BookMarked, Brain } from "lucide-react";
 import { GEM_COLORS, GemColor, Player } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { GEM_META, GemToken } from "./gems";
@@ -52,17 +52,30 @@ function GemColumn({
 
 export function PlayerSummary({ player, index }: { player: Player; index: number }) {
   const game = useGame((s) => s.game)!;
+  const aiThinking = useGame((s) => s.aiThinking);
   const isCurrent = game.currentPlayerIndex === index && game.phase !== "finished";
+  const thinking = isCurrent && player.isAI && aiThinking;
   const totalCards = GEM_COLORS.reduce((s, c) => s + player.bonuses[c], 0);
   const totalCoins = GEM_COLORS.reduce((s, c) => s + player.tokens[c], 0) + player.tokens.gold;
 
   return (
     <div
+      data-fly={`player-${index}`}
       className={clsx(
         "gold-frame panel-glass relative flex-1 rounded-2xl p-2.5 transition",
         isCurrent ? "animate-turn" : "opacity-95",
       )}
     >
+      {thinking && (
+        <div className="gold-pill absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-gold animate-fadein">
+          <Brain size={11} /> 생각 중
+          <span className="inline-flex">
+            <span className="animate-pulse">.</span>
+            <span className="animate-pulse [animation-delay:150ms]">.</span>
+            <span className="animate-pulse [animation-delay:300ms]">.</span>
+          </span>
+        </div>
+      )}
       {/* name pill + prestige */}
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="gold-pill flex items-center gap-1.5 rounded-full px-2.5 py-1">

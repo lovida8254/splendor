@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import { aiAction } from "@/lib/ai/ai";
 import { triggerFly } from "@/lib/flyTrigger";
+import { runEffects } from "@/lib/effects";
+import { setSoundEnabled, unlockAudio } from "@/lib/sound";
 import {
   Action,
   AILevel,
@@ -54,6 +56,7 @@ interface Store {
   message: string | null;
   aiThinking: boolean;
   speed: Speed;
+  sound: boolean;
 
   // manual purchase flow
   purchaseSource: Extract<CardSource, { from: "board" | "reserved" }> | null;
@@ -90,6 +93,7 @@ interface Store {
   replayPlayPause: () => void;
 
   setSpeed: (s: Speed) => void;
+  setSound: (b: boolean) => void;
   setMessage: (m: string | null) => void;
 }
 
@@ -128,20 +132,33 @@ function loadSnapshot(): SaveSnapshot | null {
   }
 }
 
-function loadSpeed(): Speed {
-  if (typeof window === "undefined") return "normal";
+function loadSettings(): { speed: Speed; sound: boolean } {
+  const def = { speed: "normal" as Speed, sound: true };
+  if (typeof window === "undefined") return def;
   try {
     const v = window.localStorage.getItem(SETTINGS_KEY);
-    if (v && JSON.parse(v).speed) return JSON.parse(v).speed as Speed;
+    if (!v) return def;
+    const o = JSON.parse(v);
+    return { speed: (o.speed as Speed) ?? "normal", sound: o.sound !== false };
+  } catch {
+    return def;
+  }
+}
+
+function saveSettings(speed: Speed, sound: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify({ speed, sound }));
   } catch {
     /* ignore */
   }
-  return "normal";
 }
 
 export const useGame = create<Store>((set, get) => {
   let aiTimer: ReturnType<typeof setTimeout> | null = null;
   let replayTimer: ReturnType<typeof setInterval> | null = null;
+  const initialSettings = loadSettings();
+  setSoundEnabled(initialSettings.sound);
 
   function clearTimers() {
     if (aiTimer) {
@@ -168,6 +185,7 @@ export const useGame = create<Store>((set, get) => {
     const actions = [...s.actions, action];
     const history = [...s.history, next];
     set({ game: next, actions, history, selection: { tokens: {} }, message: null });
+    runEffects(s.game, next, action);
     if (s.config) persist(s.config, actions);
     scheduleAI();
   }
@@ -204,6 +222,7 @@ export const useGame = create<Store>((set, get) => {
         const actions = [...st.actions, action];
         const history = [...st.history, next];
         set({ game: next, actions, history });
+        runEffects(st.game, next, action);
         if (st.config) persist(st.config, actions);
       } catch (e) {
         set({ aiThinking: false, message: `AI 오류: ${(e as Error).message}` });
@@ -230,7 +249,8 @@ export const useGame = create<Store>((set, get) => {
     selection: { tokens: {} },
     message: null,
     aiThinking: false,
-    speed: loadSpeed(),
+    speed: initialSettings.speed,
+    sound: initialSettings.sound,
     purchaseSource: null,
     replayActive: false,
     replayIndex: 0,
@@ -238,6 +258,7 @@ export const useGame = create<Store>((set, get) => {
 
     startGame(players) {
       clearTimers();
+      unlockAudio(); // runs within the start-button gesture so AI sounds work
       const seed = (Math.floor(Math.random() * 1_000_000) + 1) | 0;
       const config: GameConfig = { players, seed };
       const game = newGame({ players, seed });
@@ -493,13 +514,14 @@ export const useGame = create<Store>((set, get) => {
 
     setSpeed(speed) {
       set({ speed });
-      if (typeof window !== "undefined") {
-        try {
-          window.localStorage.setItem(SETTINGS_KEY, JSON.stringify({ speed }));
-        } catch {
-          /* ignore */
-        }
-      }
+      saveSettings(speed, get().sound);
+    },
+
+    setSound(sound) {
+      setSoundEnabled(sound);
+      unlockAudio();
+      set({ sound });
+      saveSettings(get().speed, sound);
     },
 
     setMessage(m) {
