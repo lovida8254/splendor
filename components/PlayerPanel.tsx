@@ -4,26 +4,48 @@ import clsx from "clsx";
 import { Bot, User, Crown, BookMarked } from "lucide-react";
 import { GEM_COLORS, GemColor, Player } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
-import { GEM_META, GemJewel, GemToken } from "./gems";
+import { GEM_META, GemToken } from "./gems";
 import DevCard from "./DevCard";
 
-/** One gem column: owned bonus cards (top) + held tokens (bottom), reference-style. */
-function GemColumn({ color, cards, tokens }: { color: GemColor; cards: number; tokens: number }) {
+/**
+ * One gem column showing BOTH counts separately:
+ *   ▭ rounded rectangle (top) = owned development cards of this color
+ *   ● circle (bottom)        = held tokens of this color
+ */
+function GemColumn({
+  color,
+  cards,
+  tokens,
+  playerIndex,
+}: {
+  color: GemColor;
+  cards: number;
+  tokens: number;
+  playerIndex: number;
+}) {
   const m = GEM_META[color];
+  const fg = m.textDark ? "#1a1626" : "#fff";
   return (
-    <div className="flex flex-col items-center gap-1" title={`${m.label} · 카드 ${cards} · 토큰 ${tokens}`}>
+    <div
+      className="flex flex-col items-center gap-1"
+      data-fly={`player-${playerIndex}-${color}`}
+      title={`${m.label} · 카드 ${cards}장 · 코인 ${tokens}개`}
+    >
       <div
-        className="relative grid h-9 w-7 place-items-center rounded-[5px] ring-1 ring-black/40"
-        style={{ background: `linear-gradient(160deg, ${m.hex}, ${m.dark})` }}
+        className="grid h-7 w-5 place-items-center rounded-[4px] text-[11px] font-bold ring-1 ring-black/40"
+        style={{ background: `linear-gradient(160deg, ${m.hex}, ${m.dark})`, color: fg }}
       >
-        <GemJewel color={color} size={15} />
-        <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-velvet px-0.5 text-[10px] font-bold text-gold ring-1 ring-gold/40">
-          {cards}
-        </span>
+        {cards}
       </div>
-      <span className={clsx("text-[11px] font-semibold tabular-nums", tokens > 0 ? "text-ink" : "text-ink-muted2")}>
+      <div
+        className="grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold ring-1 ring-black/40"
+        style={{
+          background: `radial-gradient(circle at 35% 30%, ${m.light}, ${m.hex} 60%, ${m.dark})`,
+          color: fg,
+        }}
+      >
         {tokens}
-      </span>
+      </div>
     </div>
   );
 }
@@ -31,6 +53,8 @@ function GemColumn({ color, cards, tokens }: { color: GemColor; cards: number; t
 export function PlayerSummary({ player, index }: { player: Player; index: number }) {
   const game = useGame((s) => s.game)!;
   const isCurrent = game.currentPlayerIndex === index && game.phase !== "finished";
+  const totalCards = GEM_COLORS.reduce((s, c) => s + player.bonuses[c], 0);
+  const totalCoins = GEM_COLORS.reduce((s, c) => s + player.tokens[c], 0) + player.tokens.gold;
 
   return (
     <div
@@ -50,27 +74,33 @@ export function PlayerSummary({ player, index }: { player: Player; index: number
         </span>
       </div>
 
-      {/* gem columns */}
+      {/* per-color: cards (▭) over coins (●) */}
       <div className="flex items-start justify-between gap-1">
         {GEM_COLORS.map((c) => (
-          <GemColumn key={c} color={c} cards={player.bonuses[c]} tokens={player.tokens[c]} />
+          <GemColumn key={c} color={c} cards={player.bonuses[c]} tokens={player.tokens[c]} playerIndex={index} />
         ))}
-        {/* gold tokens */}
-        <div className="flex flex-col items-center gap-1" title={`골드 토큰 ${player.tokens.gold}`}>
-          <div className="grid h-9 w-7 place-items-center">
-            <GemToken color="gold" count={player.tokens.gold} size="sm" showZero={false} />
+        {/* gold: coins only (no cards) */}
+        <div
+          className="flex flex-col items-center gap-1"
+          data-fly={`player-${index}-gold`}
+          title={`골드 코인 ${player.tokens.gold}개`}
+        >
+          <div className="grid h-7 w-5 place-items-center text-[10px] text-ink-muted2">—</div>
+          <div className="grid place-items-center">
+            <GemToken color="gold" count={player.tokens.gold} size="xs" showZero />
           </div>
-          <span className="text-[11px] font-semibold tabular-nums text-ink-muted2">{player.tokens.gold}</span>
         </div>
       </div>
 
-      {/* footers: reserved + nobles */}
-      <div className="mt-2 flex items-center justify-between text-[10px] text-ink-muted2">
-        <span className="flex items-center gap-1">
-          <BookMarked size={11} /> 예약 {player.reserved.length}/3
+      {/* explicit totals + reserved/nobles */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-ink-muted2">
+        <span>코인 <b className="text-ink">{totalCoins}</b>/10</span>
+        <span>· 카드 <b className="text-ink">{totalCards}</b></span>
+        <span className="ml-auto flex items-center gap-1">
+          <BookMarked size={10} /> {player.reserved.length}/3
         </span>
         <span className="flex items-center gap-1">
-          <Crown size={11} /> 귀족 {player.nobles.length}
+          <Crown size={10} /> {player.nobles.length}
         </span>
       </div>
     </div>

@@ -28,6 +28,15 @@
   리플레이는 처음부터 step/play/pause/스크럽(ReplayBar). 저장은 {config, actions}로 경량화.
 - **속도 튜닝**: 느림/보통/빠름(AI 딜레이·리플레이 속도), 설정 영속화.
 
+### 추가 폴리시 + 버그픽스 (같은 날 후속)
+- **토큰 플라이 애니메이션**: 행동 시 코인이 공급처↔플레이어 사이를 날아감(사람·AI 공통).
+  store dispatch 시점에 `triggerFly(prev, action)`로 트리거, DOM 앵커(`data-fly`/`data-testid`)로 좌표 산출,
+  `FlyLayer` 오버레이가 렌더(`store/flyStore.ts`, `lib/flyTrigger.ts`, `components/FlyLayer.tsx`).
+- **버그픽스**: (1) 비용 원형이 4개인 카드에서 구매 버튼이 밀려 안 보이던 문제 → 비용을 가로 wrap +
+  footer를 `shrink-0`로 고정. (2) 코인 선택 표시가 안 되던 문제 → 인라인 `box-shadow`가 Tailwind `ring`을
+  덮어써서 선택 링이 안 보였음 → 선택/하이라이트 링을 단일 `box-shadow` 레이어로 통합 + 선택 시 살짝 떠오름.
+- **플레이어 패널**: 색별로 **보유 카드(▭)와 보유 코인(●)을 분리 표시** + 총 코인/카드 합계 + 범례(요청 반영).
+
 ### 검증
 - typecheck 클린, **vitest 44/44**(엔진 35 + store 9: 되돌리기·리플레이·수동지불·속도).
 - **Playwright**: 폴드/데스크톱 5뷰포트 오버플로 0·에러 0(프로덕션 빌드 기준 검증 체계 유지),

@@ -50,6 +50,7 @@ for (const c of colors) {
     if (picked.length === 3) break;
   }
 }
+await page.screenshot({ path: `${OUT}/ui-selected.png` }); // selection indicators visible
 if (picked.length >= 1) {
   const confirm = page.getByTestId("take-confirm");
   if (await confirm.isEnabled()) {
@@ -57,8 +58,10 @@ if (picked.length >= 1) {
     took = true;
   }
 }
+await page.waitForTimeout(170);
+await page.screenshot({ path: `${OUT}/ui-flying.png` }); // tokens mid-flight
 log(`take tokens: picked=${picked.length} confirmed=${took}`);
-await page.waitForTimeout(300);
+await page.waitForTimeout(400);
 await page.screenshot({ path: `${OUT}/ui-after-take.png` });
 
 // 2) Undo.

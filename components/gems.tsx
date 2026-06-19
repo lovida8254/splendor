@@ -106,6 +106,7 @@ export function GemToken({
       className={clsx(
         "relative shrink-0 transition-transform",
         interactive ? "cursor-pointer hover:-translate-y-0.5" : "cursor-default",
+        selected ? "-translate-y-1" : "",
         !interactive && disabled ? "opacity-40" : "",
       )}
       style={{ width: px, height: px + depth * 3 }}
@@ -126,16 +127,22 @@ export function GemToken({
       ))}
       {/* top coin */}
       <span
-        className={clsx(
-          "absolute left-0 top-0 grid place-items-center rounded-full ring-1",
-          selected ? "ring-2 ring-gold shadow-[0_0_14px_rgba(216,178,94,.6)]" : "ring-black/40",
-          highlight && !selected ? "ring-gold/60" : "",
-        )}
+        className="absolute left-0 top-0 grid place-items-center rounded-full"
         style={{
           width: px,
           height: px,
           background: `radial-gradient(circle at 32% 28%, ${m.light}, ${m.hex} 55%, ${m.dark})`,
-          boxShadow: "inset 0 2px 4px rgba(255,255,255,.35), inset 0 -3px 5px rgba(0,0,0,.35)",
+          // Combine inset highlights with the selection/highlight ring in ONE
+          // box-shadow (an inline `ring` would be overridden by this style).
+          boxShadow: [
+            "inset 0 2px 4px rgba(255,255,255,.35)",
+            "inset 0 -3px 5px rgba(0,0,0,.35)",
+            selected
+              ? "0 0 0 3px #d8b25e, 0 0 16px rgba(216,178,94,.7)"
+              : highlight
+                ? "0 0 0 1.5px rgba(216,178,94,.5)"
+                : "0 0 0 1px rgba(0,0,0,.4)",
+          ].join(", "),
         }}
       >
         <GemJewel color={color} size={jewel} />
@@ -153,6 +160,24 @@ export function GemToken({
         </span>
       )}
     </button>
+  );
+}
+
+/** A bare coin face (no count/button) used by the fly-animation overlay. */
+export function CoinFace({ color, size = 30 }: { color: TokenColor; size?: number }) {
+  const m = GEM_META[color];
+  return (
+    <span
+      className="grid place-items-center rounded-full ring-1 ring-black/40"
+      style={{
+        width: size,
+        height: size,
+        background: `radial-gradient(circle at 32% 28%, ${m.light}, ${m.hex} 55%, ${m.dark})`,
+        boxShadow: "inset 0 2px 4px rgba(255,255,255,.35), inset 0 -3px 5px rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.4)",
+      }}
+    >
+      <GemJewel color={color} size={Math.round(size * 0.56)} />
+    </span>
   );
 }
 

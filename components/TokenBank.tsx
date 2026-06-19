@@ -60,7 +60,7 @@ export default function TokenBank() {
         ))}
 
         <div className="flex items-center gap-2.5 opacity-95">
-          <GemToken color="gold" count={game.pool.gold} size="lg" stack />
+          <GemToken color="gold" count={game.pool.gold} size="lg" stack testId="supply-gold" />
           <div className="min-w-0 flex-1">
             <div className="text-xs font-medium text-ink">골드</div>
             <div className="text-[10px] text-ink-muted2">예약 시 1개 획득</div>

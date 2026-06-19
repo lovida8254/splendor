@@ -10,6 +10,7 @@ import LogPanel from "./LogPanel";
 import { PlayerSummary, ReservedDock } from "./PlayerPanel";
 import { DiscardModal, GameOverModal, NobleModal, PurchaseModal } from "./Modals";
 import ReplayBar from "./ReplayBar";
+import FlyLayer from "./FlyLayer";
 
 export default function GameBoard() {
   const game = useGame((s) => s.game)!;
@@ -21,6 +22,14 @@ export default function GameBoard() {
       <TurnBar />
 
       {/* All players' holdings + score, visible at the top (reference layout) */}
+      <div className="mb-1 flex items-center gap-3 px-1 text-[10px] text-ink-muted2">
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-3 w-2.5 rounded-[2px] bg-ink-muted/70" /> 보유 카드
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-ink-muted/70" /> 보유 코인
+        </span>
+      </div>
       <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
         {game.players.map((p, i) => (
           <PlayerSummary key={p.id} player={p} index={i} />
@@ -55,6 +64,7 @@ export default function GameBoard() {
         </>
       )}
       <ReplayBar />
+      <FlyLayer />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { aiAction } from "@/lib/ai/ai";
+import { triggerFly } from "@/lib/flyTrigger";
 import {
   Action,
   AILevel,
@@ -162,6 +163,7 @@ export const useGame = create<Store>((set, get) => {
       set({ message: v.reason ?? "잘못된 행동" });
       return;
     }
+    triggerFly(s.game, action);
     const next = applyAction(s.game, action, s.rng);
     const actions = [...s.actions, action];
     const history = [...s.history, next];
@@ -197,6 +199,7 @@ export const useGame = create<Store>((set, get) => {
       }
       try {
         const action = aiAction(st.game, st.rng);
+        triggerFly(st.game, action);
         const next = applyAction(st.game, action, st.rng);
         const actions = [...st.actions, action];
         const history = [...st.history, next];

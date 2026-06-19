@@ -72,8 +72,8 @@ export default function DevCard({
         </span>
       </div>
 
-      {/* cost */}
-      <div className="relative mt-auto flex flex-col items-start gap-1">
+      {/* cost — wraps into rows so the footer never gets pushed off the card */}
+      <div className="relative mt-auto flex flex-wrap gap-1">
         {GEM_COLORS.filter((c) => card.cost[c] > 0).map((c) => (
           <Pip key={c} color={c} n={card.cost[c]} />
         ))}
@@ -82,9 +82,9 @@ export default function DevCard({
         )}
       </div>
 
-      {/* actions */}
+      {/* actions (always visible) */}
       {canPlay && (
-        <div className="relative mt-2 flex gap-1.5">
+        <div className="relative mt-1.5 flex shrink-0 gap-1.5">
           <button
             disabled={!affordable}
             onClick={() => openPurchase(buySource)}
