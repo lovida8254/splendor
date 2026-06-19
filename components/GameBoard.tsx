@@ -37,10 +37,19 @@ export default function GameBoard() {
         ))}
       </div>
 
-      <div className="fold-aware grid grid-cols-1 gap-3 md:grid-cols-[1fr_minmax(248px,300px)] md:gap-4">
-        {/* main column */}
-        <div className="space-y-3 md:space-y-4">
+      {/* nobles (left) + coin supply in the empty space to their right */}
+      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-stretch">
+        <div className="shrink-0 self-start lg:self-stretch">
           <NobleRow />
+        </div>
+        <div className="min-w-0 flex-1">
+          <TokenBank />
+        </div>
+      </div>
+
+      <div className="fold-aware grid grid-cols-1 gap-3 md:grid-cols-[1fr_minmax(248px,288px)] md:gap-4">
+        {/* main column: card rows + reserved */}
+        <div className="space-y-3 md:space-y-4">
           <div className="space-y-3">
             {levelsTopDown.map((lvl) => (
               <CardRow key={lvl} level={lvl} />
@@ -49,9 +58,8 @@ export default function GameBoard() {
           <ReservedDock />
         </div>
 
-        {/* sidebar */}
+        {/* sidebar: log */}
         <div className="space-y-3 md:space-y-4">
-          <TokenBank />
           <LogPanel />
         </div>
       </div>
