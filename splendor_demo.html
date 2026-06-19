@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Splendor · 예시 데모</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --velvet:#161221; --velvet2:#1d1830; --panel:#241d39; --panel2:#2c2447;
+  --line:#3a3156; --line2:#4a4070;
+  --ink:#ece8f6; --muted:#a99fc6; --muted2:#7c719c;
+  --gold:#d8b25e; --gold-soft:#caa860;
+  --c-white:#e9ecf6; --c-blue:#3a72df; --c-green:#21a06a; --c-red:#dd3a57; --c-black:#6a6188; --c-gold:#e6bd55;
+  --shadow:0 8px 28px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:
+    radial-gradient(1200px 600px at 50% -10%, #2a2142 0%, transparent 60%),
+    var(--velvet);
+  color:var(--ink); font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+  padding:22px clamp(12px,3vw,40px) 60px;
+}
+.wrap{max-width:1280px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:16px}
+.brand h1{font-family:'Cinzel',serif;font-weight:700;letter-spacing:.18em;font-size:clamp(26px,4vw,40px);margin:0;
+  background:linear-gradient(180deg,#f0dca0,#d8b25e 55%,#a9823a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:13px;letter-spacing:.02em}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line2);border-radius:9px;padding:9px 14px;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--panel2);border-color:var(--gold-soft)}
+.btn.gold{background:linear-gradient(180deg,#e7cf86,#cda14a);color:#2a200a;border:none}
+.btn.gold:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.turnbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--velvet2);
+  border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:14px}
+.turnbar .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.turnbar .hint{color:var(--muted);font-size:13px;margin-left:auto}
+
+.layout{display:grid;grid-template-columns:1fr 232px;gap:18px;align-items:start}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+
+/* nobles */
+.nobles{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.noble{width:96px;background:linear-gradient(160deg,#2e2748,#211b34);border:1px solid var(--line2);
+  border-radius:12px;padding:9px;position:relative;box-shadow:var(--shadow)}
+.noble .pv{font-family:'Cinzel',serif;font-weight:700;color:var(--gold);font-size:20px;line-height:1}
+.noble .nm{font-size:9.5px;color:var(--muted);height:24px;margin:3px 0 6px;line-height:1.15;overflow:hidden}
+.noble .req{display:flex;gap:4px;flex-wrap:wrap}
+.noble.elig{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 18px rgba(216,178,94,.35)}
+
+/* card rows */
+.rows{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:54px repeat(4,1fr);gap:10px;align-items:stretch}
+.deck{background:linear-gradient(160deg,#241d3a,#191427);border:1px dashed var(--line2);border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:6px 2px}
+.deck:hover{border-color:var(--gold-soft)}
+.deck .lv{font-family:'Cinzel',serif;color:var(--gold);font-weight:700;font-size:16px}
+.deck .ct{font-size:10px;color:var(--muted2)}
+.deck.lvl1{box-shadow:inset 0 -3px 0 rgba(33,160,106,.5)}
+.deck.lvl2{box-shadow:inset 0 -3px 0 rgba(58,114,223,.5)}
+.deck.lvl3{box-shadow:inset 0 -3px 0 rgba(221,58,87,.5)}
+
+.card{background:linear-gradient(165deg,#2b2444,#211a34);border:1px solid var(--line);border-radius:12px;
+  padding:9px;min-height:120px;display:flex;flex-direction:column;position:relative;box-shadow:var(--shadow);transition:.15s}
+.card.empty{background:repeating-linear-gradient(45deg,#1c1730,#1c1730 8px,#1a1530 8px,#1a1530 16px);border-style:dashed;opacity:.5}
+.card.buyable{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-soft),var(--shadow)}
+.card .chead{display:flex;justify-content:space-between;align-items:flex-start}
+.card .pv{font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:var(--gold);line-height:.9;min-width:14px}
+.card .bonus{width:24px;height:24px;border-radius:7px;border:1px solid rgba(255,255,255,.25)}
+.card .cost{margin-top:auto;display:flex;flex-wrap:wrap;gap:4px;padding-top:8px}
+.cact{display:flex;gap:5px;margin-top:8px}
+.cact button{flex:1;font-size:11px;font-weight:600;border-radius:7px;padding:5px 4px;cursor:pointer;border:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
+.cact button.buy{background:linear-gradient(180deg,#e7cf86,#cda14a);color:#2a200a;border:none}
+.cact button:disabled{opacity:.35;cursor:not-allowed}
+
+/* pips / gems */
+.pip{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
+  font-size:11px;font-weight:700;color:#0d0a16;border:1px solid rgba(0,0,0,.35)}
+.pip.lg{width:24px;height:24px;font-size:12px}
+.g-white{background:radial-gradient(circle at 32% 28%,#ffffff,var(--c-white));color:#3a3550}
+.g-blue{background:radial-gradient(circle at 32% 28%,#8fb4ff,var(--c-blue));color:#fff}
+.g-green{background:radial-gradient(circle at 32% 28%,#7fe0b0,var(--c-green));color:#fff}
+.g-red{background:radial-gradient(circle at 32% 28%,#ff8ea0,var(--c-red));color:#fff}
+.g-black{background:radial-gradient(circle at 32% 28%,#a9a0c6,var(--c-black));color:#fff;border-color:rgba(255,255,255,.3)}
+.g-gold{background:radial-gradient(circle at 32% 28%,#ffe9a8,var(--c-gold));color:#5a4410}
+
+/* token bank */
+.bank{background:var(--velvet2);border:1px solid var(--line);border-radius:14px;padding:14px;position:sticky;top:12px}
+.bank h3{margin:0 0 10px;font-family:'Cinzel',serif;font-size:13px;letter-spacing:.12em;color:var(--gold-soft);font-weight:700}
+.pile{display:flex;align-items:center;gap:10px;padding:6px 4px;border-radius:9px;cursor:pointer;transition:.12s}
+.pile:hover{background:var(--panel)}
+.pile.dim{opacity:.4;cursor:not-allowed}
+.pile .tok{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;box-shadow:inset 0 2px 5px rgba(255,255,255,.4),inset 0 -3px 6px rgba(0,0,0,.35)}
+.pile .lab{font-size:12px;color:var(--muted)}
+.pile .cnt{margin-left:auto;font-weight:700;font-size:15px;color:var(--ink)}
+.pile.sel{outline:2px solid var(--gold);background:var(--panel2)}
+
+.tray{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.tray .sels{display:flex;gap:6px;min-height:28px;flex-wrap:wrap;margin-bottom:8px}
+.tray .row2{display:flex;gap:6px}
+.tray .row2 .btn{flex:1;padding:8px}
+
+/* players */
+.players{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+@media(max-width:560px){.players{grid-template-columns:1fr}}
+.pl{background:var(--velvet2);border:1px solid var(--line);border-radius:14px;padding:14px}
+.pl.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-soft),0 0 22px rgba(216,178,94,.2)}
+.pl .phead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.pl .nm{font-weight:700;font-size:15px}
+.pl .tag{font-size:10px;color:var(--muted2);border:1px solid var(--line2);border-radius:20px;padding:1px 8px}
+.pl .score{margin-left:auto;font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:var(--gold)}
+.pl .grid6{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.bcol{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:34px}
+.bcol .bn{font-size:10px;color:var(--muted2)}
+.bcol .tk{font-size:11px;color:var(--muted)}
+.pl .resv{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.minic{width:62px;background:linear-gradient(165deg,#2b2444,#211a34);border:1px solid var(--line);border-radius:9px;padding:6px}
+.minic .pv{font-family:'Cinzel',serif;color:var(--gold);font-weight:700;font-size:14px}
+.minic .cost{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.minic button{width:100%;margin-top:5px;font-size:10px;border-radius:6px;padding:3px;border:none;cursor:pointer;
+  background:linear-gradient(180deg,#e7cf86,#cda14a);color:#2a200a;font-weight:700}
+.minic button:disabled{opacity:.35;cursor:not-allowed;background:var(--panel2);color:var(--muted)}
+.lbl{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;margin:8px 0 4px}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(8,6,14,.72);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(3px)}
+.modal .box{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:24px;max-width:440px;width:90%;box-shadow:var(--shadow)}
+.modal h2{font-family:'Cinzel',serif;color:var(--gold);margin:0 0 8px;font-size:20px}
+.modal p{color:var(--muted);font-size:14px;margin:0 0 16px}
+.hidden{display:none}
+.foot{margin-top:22px;color:var(--muted2);font-size:11px;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>SPLENDOR</h1>
+      <p>검증된 시드 데이터(90 카드 · 10 귀족)로 동작하는 규칙 데모</p>
+    </div>
+    <div class="controls">
+      <button class="btn" onclick="newGame(2,false)">2인 핫시트</button>
+      <button class="btn gold" onclick="newGame(2,true)">vs AI</button>
+      <button class="btn" onclick="toggleData()">시드 데이터 보기</button>
+    </div>
+  </header>
+
+  <div class="turnbar">
+    <span class="dot"></span>
+    <span id="turnName">새 게임을 시작하세요</span>
+    <span class="hint" id="turnHint">행동 1가지를 선택: 보석 3종 · 같은 보석 2개 · 예약 · 구매</span>
+  </div>
+
+  <div class="layout">
+    <div class="main">
+      <div class="nobles" id="nobles"></div>
+      <div class="rows" id="rows"></div>
+    </div>
+
+    <aside class="bank">
+      <h3>보석 은행</h3>
+      <div id="piles"></div>
+      <div class="tray">
+        <div class="sels" id="selTray"></div>
+        <div class="row2">
+          <button class="btn gold" id="confirmTake" onclick="confirmTake()" disabled>가져오기</button>
+          <button class="btn" onclick="clearSel()">취소</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="players" id="players"></div>
+
+  <div class="foot">
+    카드 데이터 출처: 공개 데이터셋 검증본 · 90장(L1 40·L2 30·L3 20) / 귀족 10장 · 규칙 기준 15점 · 토큰 한도 10 · 같은 색 2개는 해당 색 4개 이상일 때만<br>
+    이 데모는 PRD의 규칙 엔진과 UI 방향을 보여주기 위한 단일 파일 예시입니다.
+  </div>
+</div>
+
+<!-- data viewer modal -->
+<div class="modal hidden" id="dataModal">
+  <div class="box" style="max-width:560px">
+    <h2>시드 데이터</h2>
+    <p>cards.json · nobles.json 으로 그대로 내보낼 수 있는 구조입니다.</p>
+    <div style="max-height:50vh;overflow:auto;background:#15111f;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:11px;line-height:1.5" id="dataDump"></div>
+    <div class="row2" style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" onclick="toggleData()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- noble choice modal -->
+<div class="modal hidden" id="nobleModal">
+  <div class="box">
+    <h2>귀족 선택</h2>
+    <p>여러 귀족의 조건을 동시에 만족했습니다. 이번 턴에는 한 명만 방문합니다.</p>
+    <div id="nobleChoices" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- game over modal -->
+<div class="modal hidden" id="overModal">
+  <div class="box" style="text-align:center">
+    <h2 id="overTitle">게임 종료</h2>
+    <p id="overBody"></p>
+    <button class="btn gold" onclick="newGame(G.players.length, G.players.some(p=>p.isAI))">다시 하기</button>
+  </div>
+</div>
+
+<script>
+const RAW_CARDS=[["L1-001",1,0,"black",[1,1,1,1,0]],["L1-002",1,0,"black",[1,2,1,1,0]],["L1-003",1,0,"black",[2,2,0,1,0]],["L1-004",1,0,"black",[0,0,1,3,1]],["L1-005",1,0,"black",[0,0,2,1,0]],["L1-006",1,0,"black",[2,0,2,0,0]],["L1-007",1,0,"black",[0,0,3,0,0]],["L1-008",1,1,"black",[0,4,0,0,0]],["L1-009",1,0,"blue",[1,0,1,1,1]],["L1-010",1,0,"blue",[1,0,1,2,1]],["L1-011",1,0,"blue",[1,0,2,2,0]],["L1-012",1,0,"blue",[0,1,3,1,0]],["L1-013",1,0,"blue",[1,0,0,0,2]],["L1-014",1,0,"blue",[0,0,2,0,2]],["L1-015",1,0,"blue",[0,0,0,0,3]],["L1-016",1,1,"blue",[0,0,0,4,0]],["L1-017",1,0,"white",[0,1,1,1,1]],["L1-018",1,0,"white",[0,1,2,1,1]],["L1-019",1,0,"white",[0,2,2,0,1]],["L1-020",1,0,"white",[3,1,0,0,1]],["L1-021",1,0,"white",[0,0,0,2,1]],["L1-022",1,0,"white",[0,2,0,0,2]],["L1-023",1,0,"white",[0,3,0,0,0]],["L1-024",1,1,"white",[0,0,4,0,0]],["L1-025",1,0,"green",[1,1,0,1,1]],["L1-026",1,0,"green",[1,1,0,1,2]],["L1-027",1,0,"green",[0,1,0,2,2]],["L1-028",1,0,"green",[1,3,1,0,0]],["L1-029",1,0,"green",[2,1,0,0,0]],["L1-030",1,0,"green",[0,2,0,2,0]],["L1-031",1,0,"green",[0,0,0,3,0]],["L1-032",1,1,"green",[0,0,0,0,4]],["L1-033",1,0,"red",[1,1,1,0,1]],["L1-034",1,0,"red",[2,1,1,0,1]],["L1-035",1,0,"red",[2,0,1,0,2]],["L1-036",1,0,"red",[1,0,0,1,3]],["L1-037",1,0,"red",[0,2,1,0,0]],["L1-038",1,0,"red",[2,0,0,2,0]],["L1-039",1,0,"red",[3,0,0,0,0]],["L1-040",1,1,"red",[4,0,0,0,0]],["L2-001",2,1,"black",[3,2,2,0,0]],["L2-002",2,1,"black",[3,0,3,0,2]],["L2-003",2,2,"black",[0,1,4,2,0]],["L2-004",2,2,"black",[0,0,5,3,0]],["L2-005",2,2,"black",[5,0,0,0,0]],["L2-006",2,3,"black",[0,0,0,0,6]],["L2-007",2,1,"blue",[0,2,2,3,0]],["L2-008",2,1,"blue",[0,2,3,0,3]],["L2-009",2,2,"blue",[5,3,0,0,0]],["L2-010",2,2,"blue",[2,0,0,1,4]],["L2-011",2,2,"blue",[0,5,0,0,0]],["L2-012",2,3,"blue",[0,6,0,0,0]],["L2-013",2,1,"white",[0,0,3,2,2]],["L2-014",2,1,"white",[2,3,0,3,0]],["L2-015",2,2,"white",[0,0,1,4,2]],["L2-016",2,2,"white",[0,0,0,5,3]],["L2-017",2,2,"white",[0,0,0,5,0]],["L2-018",2,3,"white",[6,0,0,0,0]],["L2-019",2,1,"green",[3,0,2,3,0]],["L2-020",2,1,"green",[2,3,0,0,2]],["L2-021",2,2,"green",[4,2,0,0,1]],["L2-022",2,2,"green",[0,5,3,0,0]],["L2-023",2,2,"green",[0,0,5,0,0]],["L2-024",2,3,"green",[0,0,6,0,0]],["L2-025",2,1,"red",[2,0,0,2,3]],["L2-026",2,1,"red",[0,3,0,2,3]],["L2-027",2,2,"red",[1,4,2,0,0]],["L2-028",2,2,"red",[3,0,0,0,5]],["L2-029",2,2,"red",[0,0,0,0,5]],["L2-030",2,3,"red",[0,0,0,6,0]],["L3-001",3,3,"black",[3,3,5,3,0]],["L3-002",3,4,"black",[0,0,0,7,0]],["L3-003",3,4,"black",[0,0,3,6,3]],["L3-004",3,5,"black",[0,0,0,7,3]],["L3-005",3,3,"blue",[3,0,3,3,5]],["L3-006",3,4,"blue",[7,0,0,0,0]],["L3-007",3,4,"blue",[6,3,0,0,3]],["L3-008",3,5,"blue",[7,3,0,0,0]],["L3-009",3,3,"white",[0,3,3,5,3]],["L3-010",3,4,"white",[0,0,0,0,7]],["L3-011",3,4,"white",[3,0,0,3,6]],["L3-012",3,5,"white",[3,0,0,0,7]],["L3-013",3,3,"green",[5,3,0,3,3]],["L3-014",3,4,"green",[0,7,0,0,0]],["L3-015",3,4,"green",[3,6,3,0,0]],["L3-016",3,5,"green",[0,7,3,0,0]],["L3-017",3,3,"red",[3,5,3,0,3]],["L3-018",3,4,"red",[0,0,7,0,0]],["L3-019",3,4,"red",[0,3,6,3,0]],["L3-020",3,5,"red",[0,0,7,3,0]]];
+const RAW_NOBLES=[["N-01","Catherine de Medici",[0,3,3,3,0]],["N-02","Isabella of Castile",[3,3,0,0,3]],["N-03","Suleiman the Magnificent",[3,3,3,0,0]],["N-04","Charles V",[3,0,0,3,3]],["N-05","Machiavelli",[0,0,3,3,3]],["N-06","Mary Stuart",[0,0,4,4,0]],["N-07","Elisabeth of Austria",[4,4,0,0,0]],["N-08","Francis I of France",[0,4,4,0,0]],["N-09","Henry VIII",[4,0,0,0,4]],["N-10","Anne of Brittany",[0,0,0,4,4]]];
+
+const COLORS=["white","blue","green","red","black"];
+const LAB={white:"다이아",blue:"사파이어",green:"에메랄드",red:"루비",black:"오닉스",gold:"골드"};
+const arr2cost=a=>({white:a[0],blue:a[1],green:a[2],red:a[3],black:a[4]});
+const CARDS=RAW_CARDS.map(c=>({id:c[0],level:c[1],prestige:c[2],bonus:c[3],cost:arr2cost(c[4])}));
+const NOBLES=RAW_NOBLES.map(n=>({id:n[0],name:n[1],prestige:3,req:arr2cost(n[2])}));
+
+let G=null;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+const z=()=>({white:0,blue:0,green:0,red:0,black:0});
+function newPlayer(name,isAI){return{name,isAI,tokens:Object.assign(z(),{gold:0}),bonuses:z(),reserved:[],purchased:[],nobles:[],prestige:0};}
+function totalTokens(p){return COLORS.reduce((s,c)=>s+p.tokens[c],0)+p.tokens.gold;}
+
+function newGame(n,vsAI){
+  const per=n<=2?4:(n===3?5:7);
+  const pool=Object.assign(z(),{gold:5}); COLORS.forEach(c=>pool[c]=per);
+  const decks={1:shuffle(CARDS.filter(c=>c.level===1).map(c=>({...c}))),
+               2:shuffle(CARDS.filter(c=>c.level===2).map(c=>({...c}))),
+               3:shuffle(CARDS.filter(c=>c.level===3).map(c=>({...c})))};
+  const board={1:[],2:[],3:[]};
+  [1,2,3].forEach(l=>{for(let i=0;i<4;i++)board[l].push(decks[l].pop()||null);});
+  const nobles=shuffle(NOBLES.map(x=>({...x}))).slice(0,n+1);
+  const players=[]; for(let i=0;i<n;i++)players.push(newPlayer("플레이어 "+(i+1), vsAI&&i===1));
+  if(vsAI&&players[1])players[1].name="AI 상대";
+  G={players,pool,board,decks,nobles,current:0,startPlayer:0,phase:"playing",finalBy:null,selection:{},pendingDiscard:false,pendingNoble:null,log:[]};
+  closeAllModals(); render();
+}
+
+/* ---------- rules ---------- */
+function deficit(p,card){let need={},gold=0;COLORS.forEach(c=>{const d=Math.max(0,card.cost[c]-p.bonuses[c]-p.tokens[c]);need[c]=d;gold+=d;});return{need,gold};}
+function canAfford(p,card){return deficit(p,card).gold<=p.tokens.gold;}
+function payFor(p,card){
+  let goldNeed=0;
+  COLORS.forEach(c=>{const owe=Math.max(0,card.cost[c]-p.bonuses[c]);const useTok=Math.min(owe,p.tokens[c]);
+    p.tokens[c]-=useTok; G.pool[c]+=useTok; goldNeed+=owe-useTok;});
+  p.tokens.gold-=goldNeed; G.pool.gold+=goldNeed;
+}
+function refill(level,slot){G.board[level][slot]=G.decks[level].pop()||null;}
+
+/* ---------- actions ---------- */
+function cur(){return G.players[G.current];}
+function blockHuman(){return G.phase==="finished"||cur().isAI||G.pendingDiscard||G.pendingNoble;}
+// pendingBlock guards core actions (callable by AI too); human UI is gated by blockHuman()+disabled buttons.
+function pendingBlock(){return G.phase==="finished"||G.pendingDiscard||G.pendingNoble;}
+
+function pileClick(c){
+  if(blockHuman())return;
+  const sel=G.selection; const others=COLORS.filter(k=>k!==c&&(sel[k]||0)>0);
+  const cur_c=sel[c]||0; const distinct=COLORS.filter(k=>(sel[k]||0)>0).length;
+  if(G.pool[c]-cur_c<1)return;
+  if(cur_c===0){
+    if(COLORS.some(k=>(sel[k]||0)>=2))return;   // can't add to a pair
+    if(distinct>=3)return;
+    sel[c]=1;
+  }else if(cur_c===1){
+    if(others.length>0)return;                  // pair must be sole color
+    if(G.pool[c]<4)return;                       // need >=4 available
+    sel[c]=2;
+  }
+  render();
+}
+function clearSel(){G.selection={};render();}
+function confirmTake(){
+  if(blockHuman())return;
+  const sel=G.selection; const total=COLORS.reduce((s,c)=>s+(sel[c]||0),0);
+  if(total<1)return;
+  COLORS.forEach(c=>{const t=sel[c]||0;cur().tokens[c]+=t;G.pool[c]-=t;});
+  G.selection={}; afterAction();
+}
+function reserveBoard(level,slot){
+  if(pendingBlock())return; const p=cur(); const card=G.board[level][slot];
+  if(!card||p.reserved.length>=3)return;
+  p.reserved.push(card); if(G.pool.gold>0){G.pool.gold--;p.tokens.gold++;}
+  refill(level,slot); G.selection={}; afterAction();
+}
+function reserveDeck(level){
+  if(pendingBlock())return; const p=cur();
+  if(p.reserved.length>=3||G.decks[level].length===0)return;
+  p.reserved.push(G.decks[level].pop()); if(G.pool.gold>0){G.pool.gold--;p.tokens.gold++;}
+  G.selection={}; afterAction();
+}
+function buyBoard(level,slot){
+  if(pendingBlock())return; const p=cur(); const card=G.board[level][slot];
+  if(!card||!canAfford(p,card))return;
+  payFor(p,card); p.purchased.push(card); p.bonuses[card.bonus]++; p.prestige+=card.prestige;
+  refill(level,slot); G.selection={}; afterAction();
+}
+function buyReserved(cardId){
+  if(pendingBlock())return; const p=cur(); const idx=p.reserved.findIndex(c=>c.id===cardId);
+  if(idx<0)return; const card=p.reserved[idx]; if(!canAfford(p,card))return;
+  payFor(p,card); p.reserved.splice(idx,1); p.purchased.push(card); p.bonuses[card.bonus]++; p.prestige+=card.prestige;
+  G.selection={}; afterAction();
+}
+
+/* ---------- end of turn ---------- */
+function afterAction(){
+  const p=cur();
+  if(totalTokens(p)>10){
+    if(p.isAI){autoDiscard(p);} else {G.pendingDiscard=true;render();return;}
+  }
+  resolveNobles();
+}
+function autoDiscard(p){
+  while(totalTokens(p)>10){
+    // drop from the color with most tokens (keep gold last)
+    let best=null,bestN=-1;
+    COLORS.forEach(c=>{if(p.tokens[c]>bestN){bestN=p.tokens[c];best=c;}});
+    if(bestN<=0){p.tokens.gold--;G.pool.gold++;continue;}
+    p.tokens[best]--;G.pool[best]++;
+  }
+}
+function discardClick(c){
+  if(!G.pendingDiscard)return; const p=cur();
+  if(p.tokens[c]<=0)return; p.tokens[c]--;G.pool[c]++;
+  if(totalTokens(p)<=10){G.pendingDiscard=false;render();resolveNobles();return;}
+  render();
+}
+function discardGold(){
+  if(!G.pendingDiscard)return; const p=cur(); if(p.tokens.gold<=0)return;
+  p.tokens.gold--;G.pool.gold++;
+  if(totalTokens(p)<=10){G.pendingDiscard=false;render();resolveNobles();return;}
+  render();
+}
+function eligibleNobles(p){return G.nobles.filter(n=>COLORS.every(c=>p.bonuses[c]>=n.req[c]));}
+function grantNoble(p,n){p.nobles.push(n);p.prestige+=n.prestige;G.nobles=G.nobles.filter(x=>x.id!==n.id);}
+function resolveNobles(){
+  const p=cur(); const elig=eligibleNobles(p);
+  if(elig.length===1){grantNoble(p,elig[0]);endTurn();}
+  else if(elig.length>1){
+    if(p.isAI){grantNoble(p,elig[0]);endTurn();}
+    else{G.pendingNoble=elig;render();}
+  }else endTurn();
+}
+function chooseNoble(id){
+  const p=cur(); const n=G.pendingNoble.find(x=>x.id===id); if(!n)return;
+  grantNoble(p,n); G.pendingNoble=null; endTurn();
+}
+function endTurn(){
+  const p=cur();
+  if(p.prestige>=15&&G.finalBy===null){G.finalBy=G.current;G.phase="finalRound";}
+  const next=(G.current+1)%G.players.length;
+  if(G.phase==="finalRound"&&next===G.startPlayer){G.phase="finished";render();showOver();return;}
+  G.current=next; G.selection={}; render();
+  if(cur().isAI&&G.phase!=="finished")setTimeout(aiTurn,650);
+}
+
+/* ---------- AI (greedy heuristic) ---------- */
+function aiTurn(){
+  const p=cur(); if(G.phase==="finished")return;
+  // 1) buy best affordable (board + reserved)
+  let buys=[];
+  [1,2,3].forEach(l=>G.board[l].forEach((card,s)=>{if(card&&canAfford(p,card))buys.push({card,kind:"board",l,s});}));
+  p.reserved.forEach(card=>{if(canAfford(p,card))buys.push({card,kind:"resv"});});
+  if(buys.length){
+    buys.sort((a,b)=>b.card.prestige-a.card.prestige || costSum(a.card)-costSum(b.card));
+    const b=buys[0];
+    if(b.kind==="board")buyBoard(b.l,b.s); else buyReserved(b.card.id);
+    return;
+  }
+  // 2) gather tokens toward the cheapest target on board
+  let targets=[];
+  [1,2,3].forEach(l=>G.board[l].forEach(card=>{if(card){const d=deficit(p,card);targets.push({card,gold:d.gold,need:d.need});}}));
+  targets.sort((a,b)=>a.gold-b.gold);
+  const tgt=targets[0];
+  if(tgt){
+    // most-needed color with pool>=4 -> take 2; else take up to 3 different needed colors
+    const needed=COLORS.filter(c=>tgt.need[c]>0&&G.pool[c]>0).sort((a,b)=>tgt.need[b]-tgt.need[a]);
+    const top=needed[0];
+    if(top&&G.pool[top]>=4&&tgt.need[top]>=2){
+      p.tokens[top]+=2;G.pool[top]-=2;afterAction();return;
+    }
+    let took=0;
+    for(const c of needed){if(took>=3)break;p.tokens[c]++;G.pool[c]--;took++;}
+    if(took>0){afterAction();return;}
+  }
+  // 3) fallback: take any 3 different, else reserve a level-1, else pass-equivalent
+  let took=0;
+  for(const c of COLORS){if(took>=3)break;if(G.pool[c]>0){p.tokens[c]++;G.pool[c]--;took++;}}
+  if(took>0){afterAction();return;}
+  // reserve something
+  for(const l of [1,2,3])for(let s=0;s<4;s++){if(G.board[l][s]&&p.reserved.length<3){reserveBoard(l,s);return;}}
+  endTurn();
+}
+const costSum=card=>COLORS.reduce((s,c)=>s+card.cost[c],0);
+
+/* ---------- render ---------- */
+function pip(color,n,lg){return `<span class="pip ${lg?'lg':''} g-${color}">${n}</span>`;}
+function costPips(cost){return COLORS.filter(c=>cost[c]>0).map(c=>pip(c,cost[c])).join("");}
+
+function render(){
+  if(!G)return;
+  const p=cur();
+  // turn bar
+  document.getElementById("turnName").textContent =
+    G.phase==="finished" ? "게임 종료" : `${p.name} 차례` + (G.phase==="finalRound"?" · 마지막 라운드":"");
+  document.getElementById("turnHint").textContent =
+    G.pendingDiscard ? "토큰이 10개를 초과했습니다. 자신의 토큰을 눌러 10개까지 반환하세요." :
+    G.pendingNoble ? "방문할 귀족을 선택하세요." :
+    p.isAI ? "AI가 생각 중…" : "행동 1가지 선택: 보석 3종 · 같은 보석 2개 · 예약 · 구매";
+
+  // nobles
+  const elig = (!p.isAI && G.phase!=="finished") ? eligibleNobles(p).map(n=>n.id) : [];
+  document.getElementById("nobles").innerHTML = G.nobles.map(n=>`
+    <div class="noble ${elig.includes(n.id)?'elig':''}">
+      <div class="pv">3</div>
+      <div class="nm">${n.name}</div>
+      <div class="req">${COLORS.filter(c=>n.req[c]>0).map(c=>pip(c,n.req[c])).join("")}</div>
+    </div>`).join("");
+
+  // card rows (level 3 top -> 1 bottom)
+  document.getElementById("rows").innerHTML = [3,2,1].map(l=>{
+    const deck=`<div class="deck lvl${l}" onclick="reserveDeck(${l})" title="덱에서 블라인드 예약">
+        <div class="lv">${"●".repeat(l)}</div><div class="ct">${G.decks[l].length}장</div>
+        <div class="ct" style="color:var(--gold-soft)">예약</div></div>`;
+    const cards=G.board[l].map((card,s)=>{
+      if(!card)return `<div class="card empty"></div>`;
+      const aff=!p.isAI&&!blockHuman()&&canAfford(p,card);
+      const canRes=!p.isAI&&!blockHuman()&&p.reserved.length<3;
+      return `<div class="card ${aff?'buyable':''}">
+        <div class="chead"><span class="pv">${card.prestige||""}</span>
+          <span class="bonus g-${card.bonus}"></span></div>
+        <div class="cost">${costPips(card.cost)}</div>
+        <div class="cact">
+          <button class="buy" onclick="buyBoard(${l},${s})" ${aff?'':'disabled'}>구매</button>
+          <button onclick="reserveBoard(${l},${s})" ${canRes?'':'disabled'}>예약</button>
+        </div></div>`;
+    }).join("");
+    return `<div class="row">${deck}${cards}</div>`;
+  }).join("");
+
+  // piles
+  const sel=G.selection;
+  document.getElementById("piles").innerHTML = [...COLORS,"gold"].map(c=>{
+    const isGold=c==="gold"; const n=G.pool[c];
+    const selN=sel[c]||0;
+    const dim = isGold || blockHuman() || (n-selN<1);
+    return `<div class="pile ${dim?'dim':''} ${selN?'sel':''}" ${(!isGold)?`onclick="pileClick('${c}')"`:""}>
+      <span class="tok g-${c}">${isGold?"★":""}</span>
+      <span class="lab">${LAB[c]}</span>
+      <span class="cnt">${n}${selN?` <span style="color:var(--gold)">-${selN}</span>`:""}</span></div>`;
+  }).join("");
+
+  // selection tray
+  const trayHtml = COLORS.filter(c=>(sel[c]||0)>0).map(c=>pip(c,sel[c],true)).join("");
+  document.getElementById("selTray").innerHTML = trayHtml || `<span style="color:var(--muted2);font-size:12px">은행에서 보석을 선택…</span>`;
+  document.getElementById("confirmTake").disabled = blockHuman() || COLORS.reduce((s,c)=>s+(sel[c]||0),0)<1;
+
+  // players
+  document.getElementById("players").innerHTML = G.players.map((pl,i)=>{
+    const active=i===G.current&&G.phase!=="finished";
+    const bonusRow=COLORS.map(c=>`<div class="bcol">
+        <span class="tok g-${c}" style="width:26px;height:26px;font-size:11px;display:flex;align-items:center;justify-content:center;border-radius:50%">${pl.bonuses[c]||""}</span>
+        <span class="tk">${pl.tokens[c]}</span></div>`).join("")
+      + `<div class="bcol"><span class="tok g-gold" style="width:26px;height:26px;font-size:11px;display:flex;align-items:center;justify-content:center;border-radius:50%">★</span><span class="tk">${pl.tokens.gold}</span></div>`;
+    const resv = pl.reserved.length ? pl.reserved.map(card=>{
+      const aff=active&&!pl.isAI&&!blockHuman()&&canAfford(pl,card);
+      return `<div class="minic"><div class="pv">${card.prestige||"·"}</div>
+        <div style="font-size:9px;color:var(--muted2)">L${card.level} ${LAB[card.bonus]}</div>
+        <div class="cost">${COLORS.filter(c=>card.cost[c]>0).map(c=>pip(c,card.cost[c])).join("")}</div>
+        <button onclick="buyReserved('${card.id}')" ${aff?'':'disabled'}>구매</button></div>`;
+    }).join("") : `<span style="color:var(--muted2);font-size:11px">없음</span>`;
+    return `<div class="pl ${active?'active':''}">
+      <div class="phead"><span class="nm">${pl.name}</span>
+        ${pl.isAI?'<span class="tag">AI</span>':''}
+        <span class="score">${pl.prestige}</span></div>
+      <div class="lbl">보너스(상단) / 토큰(하단) · 구매카드 ${pl.purchased.length}</div>
+      <div class="grid6">${bonusRow}</div>
+      <div class="lbl">예약 카드 (${pl.reserved.length}/3)</div>
+      <div class="resv">${resv}</div></div>`;
+  }).join("");
+
+  // discard banner reuse turn hint; noble modal
+  if(G.pendingNoble){showNobleModal();} else {document.getElementById("nobleModal").classList.add("hidden");}
+
+  // when discarding, make own tokens clickable
+  if(G.pendingDiscard){attachDiscardHandlers();}
+}
+
+function attachDiscardHandlers(){
+  // overlay clickable piles on the active player's token chips via the bank piles? 
+  // Simpler: clicking bank pile of a color the player owns returns it.
+  document.querySelectorAll("#piles .pile").forEach((el,i)=>{
+    const c=[...COLORS,"gold"][i];
+    el.classList.remove("dim");
+    el.onclick=()=> c==="gold"?discardGold():discardClick(c);
+    el.title="반환하려면 클릭";
+  });
+}
+
+function showNobleModal(){
+  const m=document.getElementById("nobleModal");
+  document.getElementById("nobleChoices").innerHTML=G.pendingNoble.map(n=>`
+    <div class="noble elig" style="cursor:pointer" onclick="chooseNoble('${n.id}')">
+      <div class="pv">3</div><div class="nm">${n.name}</div>
+      <div class="req">${COLORS.filter(c=>n.req[c]>0).map(c=>pip(c,n.req[c])).join("")}</div></div>`).join("");
+  m.classList.remove("hidden");
+}
+
+function showOver(){
+  const ps=[...G.players].sort((a,b)=>b.prestige-a.prestige||a.purchased.length-b.purchased.length);
+  const w=ps[0];
+  document.getElementById("overTitle").textContent=`🏆 ${w.name} 승리`;
+  document.getElementById("overBody").innerHTML=
+    ps.map(p=>`${p.name}: <b>${p.prestige}점</b> (카드 ${p.purchased.length}장, 귀족 ${p.nobles.length})`).join("<br>")
+    + `<br><br><span style="font-size:12px;color:var(--muted2)">동점 시 구매 카드 수가 적은 쪽이 승리합니다.</span>`;
+  document.getElementById("overModal").classList.remove("hidden");
+}
+
+function toggleData(){
+  const m=document.getElementById("dataModal");
+  if(m.classList.contains("hidden")){
+    document.getElementById("dataDump").innerHTML=
+      `<b style="color:var(--gold)">cards.json</b> — 90장 (L1 40·L2 30·L3 20)<br>`+
+      `<pre style="white-space:pre-wrap;margin:6px 0">${JSON.stringify(CARDS[0],null,1)}</pre>`+
+      `<b style="color:var(--gold)">nobles.json</b> — 10장 (각 3점)<br>`+
+      `<pre style="white-space:pre-wrap;margin:6px 0">${JSON.stringify(NOBLES[0],null,1)}</pre>`+
+      `<span style="color:var(--muted2)">색상 키: white=다이아 · blue=사파이어 · green=에메랄드 · red=루비 · black=오닉스</span>`;
+    m.classList.remove("hidden");
+  }else m.classList.add("hidden");
+}
+function closeAllModals(){["nobleModal","overModal","dataModal"].forEach(id=>document.getElementById(id).classList.add("hidden"));}
+
+newGame(2,true);
+</script>
+</body>
+</html>
