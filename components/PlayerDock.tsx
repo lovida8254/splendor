@@ -48,19 +48,32 @@ function OwnedCards({ player }: { player: Player }) {
       {!hasCards ? (
         <p className="text-[11px] text-ink-muted2">아직 없습니다.</p>
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {GEM_COLORS.map((c) => {
             const cards = player.purchased
               .filter((p) => p.bonus === c)
               .sort((a, b) => a.level - b.level || a.prestige - b.prestige);
             if (cards.length === 0) return null;
+            const m = GEM_META[c];
+            const points = cards.reduce((s, card) => s + card.prestige, 0);
             return (
-              <div key={c} className="relative" style={{ height: 50 + (cards.length - 1) * 15, width: 36 }}>
-                {cards.map((card, i) => (
-                  <div key={card.id} className="absolute left-0" style={{ top: i * 15 }}>
-                    <MiniCard card={card} />
-                  </div>
-                ))}
+              <div key={c} className="flex flex-col items-center gap-1">
+                {/* count badge on top: cards owned of this color (= bonus) */}
+                <span
+                  className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ring-1 ring-black/40"
+                  style={{ background: `linear-gradient(180deg, ${m.light}, ${m.hex})`, color: m.textDark ? "#1a1626" : "#fff" }}
+                  title={`${m.label} 카드 ${cards.length}장 · ${points}점`}
+                >
+                  ×{cards.length}
+                  {points > 0 && <span className="text-gold drop-shadow-[0_1px_1px_rgba(0,0,0,.7)]">+{points}</span>}
+                </span>
+                <div className="relative" style={{ height: 50 + (cards.length - 1) * 15, width: 36 }}>
+                  {cards.map((card, i) => (
+                    <div key={card.id} className="absolute left-0" style={{ top: i * 15 }}>
+                      <MiniCard card={card} />
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })}

@@ -93,6 +93,8 @@ const bought = await page.evaluate(() => {
   return g.players[0].purchased.length;
 });
 log(`purchase: bought=${bought}`);
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${OUT}/ui-owned.png`, fullPage: true });
 
 // 4) Replay.
 const replay = page.getByTestId("replay");
