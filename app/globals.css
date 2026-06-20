@@ -55,7 +55,8 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 .panel-glass {
-  background: linear-gradient(180deg, #161b2f 0%, #0f1220 100%);
+  /* same navy palette, but a more pronounced top-to-bottom gradient for depth */
+  background: linear-gradient(180deg, #1d2440 0%, #141831 52%, #0d1020 100%);
   backdrop-filter: blur(2px);
 }
 
