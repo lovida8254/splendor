@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { AILevel, PlayerConfig } from "@/lib/engine";
 import { useGame, onlineAvailable } from "@/store/gameStore";
 import HowToPlay from "./HowToPlay";
+import StatsScreen from "./StatsScreen";
 
 type Slot = { name: string; kind: "human" | "ai"; aiLevel: AILevel };
 
@@ -151,7 +152,10 @@ export default function SetupScreen() {
         </button>
       )}
 
-      <HowToPlay className="menu-inset mt-3 w-full rounded-xl py-3 font-semibold text-gold transition hover:brightness-110" />
+      <div className="mt-3 flex gap-3">
+        <HowToPlay className="menu-inset flex-1 rounded-xl py-3 font-semibold text-gold transition hover:brightness-110" />
+        <StatsScreen className="menu-inset flex-1 rounded-xl py-3 font-semibold text-gold transition hover:brightness-110" />
+      </div>
 
       <p className="mt-4 text-center text-xs text-ink-muted2">먼저 15 명성점에 도달하면 승리</p>
     </div>

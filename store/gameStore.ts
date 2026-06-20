@@ -7,6 +7,7 @@ import { runEffects } from "@/lib/effects";
 import { setSoundEnabled, unlockAudio } from "@/lib/sound";
 import { supabase, supabaseEnabled, RoomRow, ChatRow, PresenceRow } from "@/lib/supabase";
 import { pushToast } from "@/store/toastStore";
+import { recordGameOnce, StatMode } from "@/lib/stats";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   Action,
@@ -240,6 +241,41 @@ export const useGame = create<Store>((set, get) => {
     }
   }
 
+  /** Record a finished game to local stats (deduped). */
+  function recordFinish(game: GameState | null) {
+    if (!game || game.phase !== "finished" || !game.winnerId) return;
+    const s = get();
+    const seed = s.online?.config?.seed ?? s.config?.seed ?? 0;
+    const sig = `${seed}:${game.winnerId}:${game.turnCount}`;
+    let mode: StatMode;
+    let meIndex: number | null = null;
+    if (s.online) {
+      mode = "online";
+      const k = Object.keys(s.online.seats).find((key) => s.online!.seats[key] === s.online!.clientId);
+      meIndex = k != null ? Number(k) : null;
+    } else {
+      mode = game.players.some((p) => p.isAI) ? "ai" : "hotseat";
+      if (mode === "ai") {
+        const idx = game.players.findIndex((p) => !p.isAI);
+        meIndex = idx >= 0 ? idx : null;
+      }
+    }
+    const me = meIndex != null ? game.players[meIndex] : null;
+    const winner = game.players.find((p) => p.id === game.winnerId);
+    recordGameOnce(sig, {
+      ts: Date.now(),
+      mode,
+      players: game.players.length,
+      names: game.players.map((p) => p.name),
+      winner: winner?.name ?? "",
+      meWon: me ? game.winnerId === me.id : null,
+      mePrestige: me ? me.prestige : null,
+      meCards: me ? me.purchased.length : null,
+      meNobles: me ? me.nobles.length : null,
+      turns: game.turnCount,
+    });
+  }
+
   /** Apply a legal action to the live game, recording it for undo/replay. */
   function commit(action: Action) {
     const s = get();
@@ -257,6 +293,7 @@ export const useGame = create<Store>((set, get) => {
     set({ game: next, actions, history, selection: { tokens: {} }, message: null });
     runEffects(s.game, next, action);
     if (s.config) persist(s.config, actions);
+    recordFinish(next);
     scheduleAI(animMs);
   }
 
@@ -297,6 +334,7 @@ export const useGame = create<Store>((set, get) => {
         set({ game: next, actions, history });
         runEffects(st.game, next, action);
         if (st.config) persist(st.config, actions);
+        recordFinish(next);
         scheduleAI(nextAnim);
       } catch (e) {
         set({ aiThinking: false, message: `AI 오류: ${(e as Error).message}` });
@@ -495,6 +533,7 @@ export const useGame = create<Store>((set, get) => {
     });
     takeoverForLen = -1;
     runEffects(s.game, next, action);
+    recordFinish(next);
     const status = next.phase === "finished" ? "finished" : "playing";
     supabase
       .from("rooms")
@@ -586,6 +625,7 @@ export const useGame = create<Store>((set, get) => {
       },
     });
     takeoverForLen = -1;
+    recordFinish(game);
     driveAutomation();
   }
 
