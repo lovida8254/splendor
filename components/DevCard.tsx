@@ -53,7 +53,7 @@ export default function DevCard({
       data-fly-card={cardAnchor}
       className={clsx(
         "card-sheen relative flex h-[164px] flex-col overflow-hidden rounded-xl border p-2 shadow-velvet animate-pop",
-        "transition duration-150 hover:-translate-y-1.5 hover:shadow-[0_22px_44px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.5)] hover:z-20",
+        "transition duration-150 hover:-translate-y-1.5 hover:scale-[1.05] hover:shadow-[0_22px_44px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.5)] hover:z-20",
         affordable ? "border-gold/70 animate-affordable" : "border-line2",
       )}
       style={{ background: `linear-gradient(157deg, ${m.hex}22 0%, #1d1733 55%, #181228 100%)` }}

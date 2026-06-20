@@ -43,7 +43,7 @@ export default function CardRow({ level }: { level: CardLevel }) {
           className={clsx(
             "relative flex h-[164px] flex-col items-center justify-center overflow-hidden rounded-xl border text-center shadow-velvet transition duration-150",
             canReserveDeck
-              ? "border-gold/60 hover:-translate-y-1.5 hover:shadow-[0_22px_44px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.5)] hover:brightness-110"
+              ? "border-gold/60 hover:-translate-y-1.5 hover:scale-[1.05] hover:shadow-[0_22px_44px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.5)] hover:brightness-110"
               : "border-line2",
           )}
           style={
