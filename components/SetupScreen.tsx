@@ -57,13 +57,13 @@ export default function SetupScreen() {
       {canResume && (
         <button
           onClick={() => resumeGame()}
-          className="mb-5 flex w-full items-center justify-center gap-2 rounded-xl border border-gold/50 bg-panel py-3 font-semibold text-gold transition hover:bg-panel-2"
+          className="btn-gold mb-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-display font-bold tracking-wide transition"
         >
           <RotateCcw size={18} /> 이어하기 (저장된 게임)
         </button>
       )}
 
-      <div className="rounded-2xl border border-line bg-velvet-2/70 p-5 shadow-velvet">
+      <div className="menu-panel rounded-2xl p-5">
         <div className="mb-4">
           <label className="mb-2 block text-xs uppercase tracking-wider text-ink-muted2">인원</label>
           <div className="flex gap-2">
@@ -86,7 +86,7 @@ export default function SetupScreen() {
 
         <div className="space-y-2.5">
           {slots.slice(0, count).map((s, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-line bg-panel/60 p-2.5">
+            <div key={i} className="menu-inset flex items-center gap-2 rounded-lg p-2.5">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-velvet text-sm font-bold text-gold">
                 {i + 1}
               </span>
@@ -134,7 +134,7 @@ export default function SetupScreen() {
 
         <button
           onClick={start}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#e7cf86] to-[#cda14a] py-3.5 font-display font-bold tracking-wider text-[#2a200a] transition hover:brightness-105"
+          className="btn-gold mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-display font-bold tracking-wider transition"
         >
           <Play size={18} /> 게임 시작
         </button>
