@@ -45,7 +45,7 @@ export default function DevCard({
     <div
       data-fly-card={cardAnchor}
       className={clsx(
-        "card-sheen relative flex h-[150px] flex-col overflow-hidden rounded-xl border p-1.5 shadow-velvet animate-pop sm:h-[164px] sm:p-2",
+        "card-sheen relative flex min-h-[150px] flex-col overflow-hidden rounded-xl border p-1.5 shadow-velvet animate-pop sm:min-h-0 sm:h-[164px] sm:p-2",
         "transition duration-150 hover:-translate-y-1.5 hover:scale-[1.05] hover:shadow-[0_22px_44px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.5)] hover:z-20",
         affordable ? "border-gold/70 animate-affordable" : "border-line2",
       )}
@@ -103,7 +103,7 @@ export default function DevCard({
 
       {/* actions */}
       {canPlay && (
-        <div className="relative z-10 mt-1.5 flex shrink-0 flex-col gap-1 xs:flex-row xs:gap-1.5">
+        <div className="relative z-10 mt-1 flex shrink-0 flex-col gap-1 xs:flex-row xs:gap-1.5 sm:mt-1.5">
           <button
             disabled={!affordable}
             onClick={() => openPurchase(buySource)}
