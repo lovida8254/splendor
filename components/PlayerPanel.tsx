@@ -31,21 +31,15 @@ function GemColumn({
       data-fly={`player-${playerIndex}-${color}`}
       title={`${m.label} · 카드 ${cards}장 · 코인 ${tokens}개`}
     >
+      {/* owned development cards of this color */}
       <div
         className="grid h-7 w-5 place-items-center rounded-[4px] text-[11px] font-bold ring-1 ring-black/40"
         style={{ background: `linear-gradient(160deg, ${m.hex}, ${m.dark})`, color: fg }}
       >
         {cards}
       </div>
-      <div
-        className="grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold ring-1 ring-black/40"
-        style={{
-          background: `radial-gradient(circle at 35% 30%, ${m.light}, ${m.hex} 60%, ${m.dark})`,
-          color: fg,
-        }}
-      >
-        {tokens}
-      </div>
+      {/* held tokens as the coin image (same as the bottom dock) */}
+      <GemToken color={color} count={tokens} size="xs" showZero />
     </div>
   );
 }

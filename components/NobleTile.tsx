@@ -13,13 +13,24 @@ function initial(noble: Noble): string {
   return n ? n[0].toUpperCase() : "♛";
 }
 
-export function NobleTile({ noble, eligible, size = "md" }: { noble: Noble; eligible?: boolean; size?: "sm" | "md" }) {
+export function NobleTile({
+  noble,
+  eligible,
+  size = "md",
+  fill,
+}: {
+  noble: Noble;
+  eligible?: boolean;
+  size?: "sm" | "md";
+  fill?: boolean;
+}) {
   const w = size === "sm" ? "w-[72px]" : "w-[100px]";
   return (
     <div
       className={clsx(
         "relative rounded-xl p-2 transition gold-frame",
         w,
+        fill ? "flex h-full flex-col justify-between" : "",
         eligible ? "animate-affordable" : "",
       )}
       style={{ background: "linear-gradient(160deg, #322a4e, #1f1932)" }}
@@ -67,9 +78,9 @@ export default function NobleRow() {
 
   if (game.nobles.length === 0) return null;
   return (
-    <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+    <div className="flex h-full flex-wrap content-stretch items-stretch justify-center gap-2 sm:justify-start">
       {game.nobles.map((n) => (
-        <NobleTile key={n.id} noble={n} eligible={eligibleIds.has(n.id)} />
+        <NobleTile key={n.id} noble={n} eligible={eligibleIds.has(n.id)} fill />
       ))}
     </div>
   );

@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { Loader2, Flag, Plus, AlertTriangle, Undo2, Clapperboard, Gauge, Volume2, VolumeX } from "lucide-react";
 import { useGame, Speed } from "@/store/gameStore";
+import HowToPlay from "./HowToPlay";
 
 const SPEED_LABEL: Record<Speed, string> = { slow: "느림", normal: "보통", fast: "빠름" };
 
@@ -80,6 +81,10 @@ export default function TurnBar() {
         >
           <Clapperboard size={13} /> <span className="hidden sm:inline">리플레이</span>
         </button>
+        <HowToPlay
+          label=""
+          className="rounded-lg border border-line2 bg-panel px-2.5 py-1.5 text-xs font-medium text-ink-muted hover:bg-panel-2"
+        />
         <button
           onClick={() => {
             if (confirm("현재 게임을 끝내고 새 게임을 시작할까요?")) abandon();

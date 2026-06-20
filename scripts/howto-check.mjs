@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const b = await chromium.launch();
+const p = await (await b.newContext({ viewport: { width: 700, height: 900 } })).newPage();
+const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
+await p.goto("http://localhost:3001/", { waitUntil: "domcontentloaded", timeout: 60000 });
+await p.getByRole("button", { name: /게임 방법/ }).click();
+await p.getByText("매 턴").first().waitFor({ timeout: 5000 });
+await p.screenshot({ path: "screenshots/howto.png" });
+console.log("howto modal ok, errors=" + errs.length);
+await b.close();
