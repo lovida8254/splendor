@@ -6,6 +6,7 @@ import { triggerFly } from "@/lib/flyTrigger";
 import { runEffects } from "@/lib/effects";
 import { setSoundEnabled, unlockAudio } from "@/lib/sound";
 import { supabase, supabaseEnabled, RoomRow, ChatRow } from "@/lib/supabase";
+import { pushToast } from "@/store/toastStore";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   Action,
@@ -43,6 +44,7 @@ const SPEED_MS: Record<Speed, number> = { slow: 1100, normal: 600, fast: 280 };
 export interface GameConfig {
   players: PlayerConfig[];
   seed: number;
+  turnSeconds?: number | null; // online turn time limit (null/0 = unlimited)
 }
 
 interface SaveSnapshot {
@@ -64,6 +66,7 @@ export interface OnlineState {
   seats: Record<string, string>; // seatIndex -> clientId (human seats only)
   status: "lobby" | "playing" | "finished";
   config: GameConfig | null;
+  turnStartedAt: number | null; // local Date.now() when the current turn began
   error: string | null;
 }
 
@@ -140,7 +143,7 @@ interface Store {
   online: OnlineState | null;
   openOnline: () => void;
   closeOnline: () => void;
-  createRoom: (players: PlayerConfig[]) => Promise<void>;
+  createRoom: (players: PlayerConfig[], turnSeconds?: number | null) => Promise<void>;
   joinRoom: (code: string) => Promise<boolean>;
   tryReconnect: () => Promise<void>;
   claimSeat: (seat: number) => Promise<void>;
@@ -304,6 +307,42 @@ export const useGame = create<Store>((set, get) => {
   // ---- online multiplayer ----
   let roomChannel: RealtimeChannel | null = null;
   let roomPoll: ReturnType<typeof setInterval> | null = null;
+  let turnTimer: ReturnType<typeof setInterval> | null = null;
+  let takeoverForLen = -1; // actions.length we already triggered a timeout takeover for
+
+  /** Which client should drive automation (AI move / timeout) for the current human turn. */
+  function timeoutDriver(seats: Record<string, string>, host: string | null, idx: number): string | null {
+    const controller = seats[String(idx)];
+    if (host && host !== controller) return host; // host drives others' timeouts
+    // host is the AFK player: hand off to the lowest other claimed human seat
+    const others = Object.keys(seats)
+      .map(Number)
+      .filter((k) => k !== idx)
+      .sort((a, b) => a - b);
+    return others.length ? seats[String(others[0])] : null;
+  }
+
+  /** If the current human player has run out of time, the designated driver plays an AI move. */
+  function checkTurnTimeout() {
+    const s = get();
+    const o = s.online;
+    if (!o || o.status !== "playing" || !s.game || s.game.phase === "finished") return;
+    const cfg = o.config;
+    const secs = cfg?.turnSeconds;
+    if (!cfg || !secs || !o.turnStartedAt) return;
+    const idx = s.game.currentPlayerIndex;
+    if (cfg.players[idx]?.isAI) return; // AI seats handled by maybeHostAI
+    if ((Date.now() - o.turnStartedAt) / 1000 < secs) return; // still has time
+    if (timeoutDriver(o.seats, o.hostId, idx) !== o.clientId) return; // not my job
+    if (takeoverForLen === s.actions.length) return; // already handled this turn
+    takeoverForLen = s.actions.length;
+    pushToast({ tone: "ai", title: cfg.players[idx].name, sub: "시간 초과 — AI가 대신 진행합니다" });
+    try {
+      onlineApplyAndPush(aiAction(s.game, s.rng));
+    } catch {
+      /* ignore */
+    }
+  }
 
   async function pollRoom() {
     const s = get();
@@ -355,7 +394,15 @@ export const useGame = create<Store>((set, get) => {
     const actions = [...s.actions, action];
     const history = [...s.history, next];
     triggerFly(s.game, action);
-    set({ game: next, actions, history, selection: { tokens: {} }, message: null });
+    set({
+      game: next,
+      actions,
+      history,
+      selection: { tokens: {} },
+      message: null,
+      online: { ...s.online, turnStartedAt: Date.now() },
+    });
+    takeoverForLen = -1;
     runEffects(s.game, next, action);
     const status = next.phase === "finished" ? "finished" : "playing";
     supabase
@@ -420,7 +467,11 @@ export const useGame = create<Store>((set, get) => {
   function applyRoom(row: RoomRow) {
     const s = get();
     if (!s.online || s.online.code !== row.code) return;
-    const config: GameConfig = { players: row.config.players as PlayerConfig[], seed: row.config.seed };
+    const config: GameConfig = {
+      players: row.config.players as PlayerConfig[],
+      seed: row.config.seed,
+      turnSeconds: row.config.turnSeconds ?? null,
+    };
     const incoming = (row.actions ?? []) as Action[];
     // A new seed means a rematch/reset — force a full rebuild.
     const seedChanged = !!s.online.config && s.online.config.seed !== config.seed;
@@ -429,7 +480,7 @@ export const useGame = create<Store>((set, get) => {
     if (row.status === "lobby") {
       set({
         game: null,
-        online: { ...s.online, seats: row.seats ?? {}, hostId: row.host, status: "lobby", config },
+        online: { ...s.online, seats: row.seats ?? {}, hostId: row.host, status: "lobby", config, turnStartedAt: null },
       });
       return;
     }
@@ -473,8 +524,10 @@ export const useGame = create<Store>((set, get) => {
         hostId: row.host,
         status: game.phase === "finished" ? "finished" : "playing",
         config,
+        turnStartedAt: Date.now(), // a new turn began (state advanced)
       },
     });
+    takeoverForLen = -1;
     maybeHostAI();
   }
 
@@ -511,6 +564,9 @@ export const useGame = create<Store>((set, get) => {
     }, 1200);
     void pollRoom();
     void pollMessages();
+    // Turn-timeout watcher (1s tick) — drives AI takeover for AFK players.
+    if (turnTimer) clearInterval(turnTimer);
+    turnTimer = setInterval(() => checkTurnTimeout(), 1000);
   }
 
   return {
@@ -818,6 +874,7 @@ export const useGame = create<Store>((set, get) => {
           seats: {},
           status: "lobby",
           config: null,
+          turnStartedAt: null,
           error: supabaseEnabled ? null : "온라인 기능이 설정되지 않았습니다.",
         },
       });
@@ -827,7 +884,7 @@ export const useGame = create<Store>((set, get) => {
       get().leaveRoom();
     },
 
-    async createRoom(players) {
+    async createRoom(players, turnSeconds = 60) {
       if (!supabase) {
         set((s) => ({ online: s.online ? { ...s.online, error: "온라인 미설정" } : s.online }));
         return;
@@ -835,7 +892,7 @@ export const useGame = create<Store>((set, get) => {
       clearTimers();
       const clientId = getClientId();
       const seed = (Math.floor(Math.random() * 1_000_000) + 1) | 0;
-      const config: GameConfig = { players, seed };
+      const config: GameConfig = { players, seed, turnSeconds: turnSeconds || null };
       const firstHuman = players.findIndex((p) => !p.isAI);
       const seats: Record<string, string> = firstHuman >= 0 ? { [String(firstHuman)]: clientId } : {};
       let code = genRoomCode();
@@ -851,7 +908,7 @@ export const useGame = create<Store>((set, get) => {
         code = genRoomCode();
       }
       set({
-        online: { view: "room", code, clientId, hostId: clientId, seats, status: "lobby", config, error: null },
+        online: { view: "room", code, clientId, hostId: clientId, seats, status: "lobby", config, turnStartedAt: null, error: null },
       });
       rememberRoom(code);
       subscribeRoom(code);
@@ -868,12 +925,16 @@ export const useGame = create<Store>((set, get) => {
         set((s) => ({
           online: s.online
             ? { ...s.online, error: "방을 찾을 수 없습니다." }
-            : { view: "menu", code: null, clientId, hostId: null, seats: {}, status: "lobby", config: null, error: "방을 찾을 수 없습니다." },
+            : { view: "menu", code: null, clientId, hostId: null, seats: {}, status: "lobby", config: null, turnStartedAt: null, error: "방을 찾을 수 없습니다." },
         }));
         return false;
       }
       const row = data as RoomRow;
-      const config: GameConfig = { players: row.config.players as PlayerConfig[], seed: row.config.seed };
+      const config: GameConfig = {
+        players: row.config.players as PlayerConfig[],
+        seed: row.config.seed,
+        turnSeconds: row.config.turnSeconds ?? null,
+      };
       set({
         online: {
           view: "room",
@@ -883,6 +944,7 @@ export const useGame = create<Store>((set, get) => {
           seats: row.seats ?? {},
           status: row.status === "lobby" ? "lobby" : "playing",
           config,
+          turnStartedAt: null,
           error: null,
         },
       });
@@ -952,6 +1014,11 @@ export const useGame = create<Store>((set, get) => {
         clearInterval(roomPoll);
         roomPoll = null;
       }
+      if (turnTimer) {
+        clearInterval(turnTimer);
+        turnTimer = null;
+      }
+      takeoverForLen = -1;
       if (roomChannel && supabase) {
         supabase.removeChannel(roomChannel);
         roomChannel = null;

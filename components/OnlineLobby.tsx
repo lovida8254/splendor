@@ -18,10 +18,18 @@ function defaultSlots(): Slot[] {
   ];
 }
 
+const TURN_OPTIONS: { label: string; value: number | null }[] = [
+  { label: "30초", value: 30 },
+  { label: "60초", value: 60 },
+  { label: "120초", value: 120 },
+  { label: "무제한", value: null },
+];
+
 function CreateForm() {
   const createRoom = useGame((s) => s.createRoom);
   const [count, setCount] = useState(2);
   const [slots, setSlots] = useState<Slot[]>(defaultSlots());
+  const [turnSeconds, setTurnSeconds] = useState<number | null>(60);
   const upd = (i: number, p: Partial<Slot>) => setSlots((s) => s.map((x, idx) => (idx === i ? { ...x, ...p } : x)));
 
   function create() {
@@ -30,7 +38,7 @@ function CreateForm() {
       isAI: s.kind === "ai",
       aiLevel: s.kind === "ai" ? s.aiLevel : undefined,
     }));
-    createRoom(players);
+    createRoom(players, turnSeconds);
   }
 
   return (
@@ -79,6 +87,23 @@ function CreateForm() {
             </select>
           </div>
         ))}
+      </div>
+      <div>
+        <div className="mb-1.5 text-[11px] uppercase tracking-wider text-ink-muted2">턴 제한시간 (초과 시 AI가 대신 진행)</div>
+        <div className="flex gap-2">
+          {TURN_OPTIONS.map((o) => (
+            <button
+              key={o.label}
+              onClick={() => setTurnSeconds(o.value)}
+              className={clsx(
+                "flex-1 rounded-lg border py-2 text-sm font-semibold transition",
+                turnSeconds === o.value ? "border-gold bg-gold/15 text-gold" : "border-line2 bg-panel text-ink-muted hover:bg-panel-2",
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       </div>
       <p className="text-[11px] text-ink-muted2">사람 자리는 방을 만든 뒤 각자 링크로 들어와 좌석을 선택합니다. 방장은 1번 사람 자리를 차지합니다.</p>
       <button onClick={create} className="btn-gold flex w-full items-center justify-center gap-2 rounded-xl py-3 font-display font-bold tracking-wide">

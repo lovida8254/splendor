@@ -1,9 +1,35 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { Loader2, Flag, Plus, AlertTriangle, Undo2, Clapperboard, Gauge, Volume2, VolumeX, Wifi, LogOut } from "lucide-react";
+import { Loader2, Flag, Plus, AlertTriangle, Undo2, Clapperboard, Gauge, Volume2, VolumeX, Wifi, LogOut, Timer } from "lucide-react";
 import { useGame, Speed } from "@/store/gameStore";
 import HowToPlay from "./HowToPlay";
+
+function TurnCountdown() {
+  const online = useGame((s) => s.online);
+  const game = useGame((s) => s.game);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 500);
+    return () => clearInterval(t);
+  }, []);
+  if (!online || online.status !== "playing" || !game || game.phase === "finished") return null;
+  const secs = online.config?.turnSeconds;
+  if (!secs || !online.turnStartedAt) return null;
+  if (game.players[game.currentPlayerIndex]?.isAI) return null;
+  const remain = Math.max(0, Math.ceil(secs - (Date.now() - online.turnStartedAt) / 1000));
+  return (
+    <span
+      className={clsx(
+        "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold tabular-nums",
+        remain <= 10 ? "bg-red-500/20 text-red-300" : "bg-black/30 text-ink-muted",
+      )}
+    >
+      <Timer size={12} /> {remain}s
+    </span>
+  );
+}
 
 const SPEED_LABEL: Record<Speed, string> = { slow: "느림", normal: "보통", fast: "빠름" };
 
@@ -43,6 +69,7 @@ export default function TurnBar() {
           <Wifi size={12} /> {online.code}
         </span>
       )}
+      <TurnCountdown />
 
       {finalRound && (
         <span className="flex items-center gap-1 rounded-md bg-gold/15 px-2 py-1 text-xs font-semibold text-gold">

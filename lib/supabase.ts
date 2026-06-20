@@ -22,7 +22,11 @@ export interface ChatRow {
 
 export interface RoomRow {
   code: string;
-  config: { players: { name: string; isAI: boolean; aiLevel?: string }[]; seed: number };
+  config: {
+    players: { name: string; isAI: boolean; aiLevel?: string }[];
+    seed: number;
+    turnSeconds?: number | null;
+  };
   actions: unknown[];
   seats: Record<string, string>;
   status: "lobby" | "playing" | "finished";
