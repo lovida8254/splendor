@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import clsx from "clsx";
 import { ShoppingCart, BookmarkPlus } from "lucide-react";
 import { Card, CardSource, deficit, GameState, GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { GEM_META, GemJewel, Pip } from "./gems";
-import { CardArt } from "./CardArt";
+import { PixelScene } from "./PixelScene";
+import { cardImage, ImageBg } from "./CardArt";
 
 function humanTurn(game: GameState): boolean {
   const cur = game.players[game.currentPlayerIndex];
@@ -44,6 +46,8 @@ export default function DevCard({
       ? `board-${buySource.level}-${buySource.slot}`
       : `reserved-${buySource.cardId}`;
 
+  const img = cardImage(card);
+
   return (
     <div
       data-fly-card={cardAnchor}
@@ -53,6 +57,20 @@ export default function DevCard({
       )}
       style={{ background: `linear-gradient(157deg, ${m.hex}22 0%, #1d1733 55%, #181228 100%)` }}
     >
+      {/* full-card illustration (or pixel scene fallback as background) */}
+      <div className="absolute inset-0">
+        {img ? (
+          <ImageBg
+            src={`cards/${img}`}
+            fallback={<PixelScene level={card.level} color={card.bonus} cardId={card.id} />}
+          />
+        ) : (
+          <PixelScene level={card.level} color={card.bonus} cardId={card.id} />
+        )}
+      </div>
+      {/* legibility scrim: darken top (header) and bottom (cost/buttons) */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-black/75" />
+
       {/* header: prestige + bonus jewel */}
       <div className="relative z-10 flex shrink-0 items-start justify-between">
         <span
@@ -65,30 +83,25 @@ export default function DevCard({
         </span>
         <span
           className="grid h-8 w-8 place-items-center rounded-full ring-1 ring-gold/40"
-          style={{ background: "rgba(0,0,0,.3)" }}
+          style={{ background: "rgba(0,0,0,.45)" }}
           title={`보너스: ${m.label}`}
         >
           <GemJewel color={card.bonus} size={22} />
         </span>
       </div>
 
-      {/* pixel-art scene illustration */}
-      <div className="relative my-1 min-h-0 flex-1 overflow-hidden rounded-md ring-1 ring-black/25">
-        <div className="absolute inset-0">
-          <CardArt card={card} />
-        </div>
-      </div>
+      <div className="min-h-0 flex-1" />
 
       {/* cost */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1">
+      <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-1">
         {GEM_COLORS.filter((c) => card.cost[c] > 0).map((c) => (
           <Pip key={c} color={c} n={card.cost[c]} />
         ))}
         {GEM_COLORS.every((c) => card.cost[c] === 0) && (
-          <span className="text-[11px] text-ink-muted2">무료</span>
+          <span className="rounded bg-black/50 px-1 text-[11px] text-ink-muted2">무료</span>
         )}
         {canPlay && !affordable && d.gold > 0 && (
-          <span className="ml-auto self-center rounded bg-black/40 px-1 text-[9px] text-ink-muted2">
+          <span className="ml-auto self-center rounded bg-black/55 px-1 text-[9px] text-ink-muted2">
             부족 {d.gold}
           </span>
         )}
@@ -96,7 +109,7 @@ export default function DevCard({
 
       {/* actions */}
       {canPlay && (
-        <div className="mt-1.5 flex shrink-0 gap-1.5">
+        <div className="relative z-10 mt-1.5 flex shrink-0 gap-1.5">
           <button
             disabled={!affordable}
             onClick={() => openPurchase(buySource)}
@@ -105,7 +118,7 @@ export default function DevCard({
               "flex flex-1 items-center justify-center gap-1 rounded-md py-1.5 text-[11px] font-bold transition",
               affordable
                 ? "bg-gradient-to-b from-[#e7cf86] to-[#cda14a] text-[#2a200a] hover:brightness-105"
-                : "cursor-not-allowed bg-black/30 text-ink-muted2",
+                : "cursor-not-allowed bg-black/50 text-ink-muted2",
             )}
           >
             <ShoppingCart size={12} /> 구매
@@ -118,8 +131,8 @@ export default function DevCard({
               className={clsx(
                 "flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition",
                 reserveCheck.ok
-                  ? "gold-frame bg-black/20 text-gold hover:bg-black/30"
-                  : "cursor-not-allowed border border-line bg-black/20 text-ink-muted2",
+                  ? "gold-frame bg-black/40 text-gold hover:bg-black/50"
+                  : "cursor-not-allowed border border-line bg-black/40 text-ink-muted2",
               )}
             >
               <BookmarkPlus size={12} /> 예약

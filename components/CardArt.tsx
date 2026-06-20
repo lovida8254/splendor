@@ -2,39 +2,41 @@
 
 import { useState } from "react";
 import { Card, Noble } from "@/lib/engine";
-import { CARD_IMAGE_FILES, NOBLE_IMAGE_FILES } from "@/lib/assets";
-import { PixelScene } from "./PixelScene";
+import {
+  CARD_BG_BY_LEVEL_COLOR,
+  CARD_IMAGE_FILES,
+  NOBLE_BG,
+  NOBLE_IMAGE_FILES,
+} from "@/lib/assets";
 
-/** Card illustration: user-supplied image (public/cards/<id>.<ext>) or pixel art. */
-export function CardArt({ card }: { card: Card }) {
-  const file = CARD_IMAGE_FILES[card.id];
-  const [err, setErr] = useState(false);
-  if (file && !err) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return (
-      <img
-        src={`cards/${file}`}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-        onError={() => setErr(true)}
-        draggable={false}
-      />
-    );
-  }
-  return <PixelScene level={card.level} color={card.bonus} cardId={card.id} />;
+/** Resolved image filename for a card (per-id first, then level+color), or null. */
+export function cardImage(card: Card): string | null {
+  return CARD_IMAGE_FILES[card.id] ?? CARD_BG_BY_LEVEL_COLOR[`${card.level}_${card.bonus}`] ?? null;
 }
 
-/** Noble portrait: user-supplied image (public/nobles/<id>.<ext>) or null (crest). */
-export function NobleArt({ noble }: { noble: Noble }) {
-  const file = NOBLE_IMAGE_FILES[noble.id];
+/** Resolved image filename for a noble (per-id portrait, else shared backdrop), or null. */
+export function nobleImage(noble: Noble): string | null {
+  return NOBLE_IMAGE_FILES[noble.id] ?? NOBLE_BG ?? null;
+}
+
+/** A background image that swaps to a fallback render if it fails to load. */
+export function ImageBg({
+  src,
+  fallback,
+  className,
+}: {
+  src: string;
+  fallback?: React.ReactNode;
+  className?: string;
+}) {
   const [err, setErr] = useState(false);
-  if (!file || err) return null;
+  if (err) return <>{fallback ?? null}</>;
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
-      src={`nobles/${file}`}
+      src={src}
       alt=""
-      className="h-full w-full rounded-full object-cover"
+      className={className ?? "absolute inset-0 h-full w-full object-cover"}
       onError={() => setErr(true)}
       draggable={false}
     />

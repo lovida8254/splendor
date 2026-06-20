@@ -4,6 +4,8 @@ import clsx from "clsx";
 import { BookmarkPlus } from "lucide-react";
 import { CardLevel, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
+import { CARD_BACK_BY_LEVEL } from "@/lib/assets";
+import { ImageBg } from "./CardArt";
 import DevCard from "./DevCard";
 
 const LEVEL_TINT: Record<CardLevel, string> = {
@@ -42,23 +44,31 @@ export default function CardRow({ level }: { level: CardLevel }) {
             "relative flex h-[164px] flex-col items-center justify-center overflow-hidden rounded-xl border text-center transition",
             canReserveDeck ? "border-gold/60 hover:brightness-110" : "border-line2",
           )}
-          style={{
-            background: `linear-gradient(160deg, ${LEVEL_TINT[level]}55, #15101f 75%)`,
-          }}
+          style={
+            CARD_BACK_BY_LEVEL[String(level)]
+              ? undefined
+              : { background: `linear-gradient(160deg, ${LEVEL_TINT[level]}55, #15101f 75%)` }
+          }
         >
-          <span className="pointer-events-none absolute inset-1 rounded-lg border border-gold/25" />
-          <span className="font-display text-[13px] font-bold tracking-[0.15em] text-gold/90 [writing-mode:vertical-rl]">
-            SPLENDOR
-          </span>
-          <span className="mt-1 flex gap-0.5">
-            {Array.from({ length: level }).map((_, i) => (
-              <span key={i} className="h-1.5 w-1.5 rounded-full bg-gold/80" />
-            ))}
-          </span>
-          <span className="absolute left-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-velvet/90 text-[11px] font-bold text-gold ring-1 ring-gold/40">
+          {CARD_BACK_BY_LEVEL[String(level)] ? (
+            <ImageBg src={`cards/${CARD_BACK_BY_LEVEL[String(level)]}`} />
+          ) : (
+            <>
+              <span className="pointer-events-none absolute inset-1 rounded-lg border border-gold/25" />
+              <span className="font-display text-[13px] font-bold tracking-[0.15em] text-gold/90 [writing-mode:vertical-rl]">
+                SPLENDOR
+              </span>
+              <span className="mt-1 flex gap-0.5">
+                {Array.from({ length: level }).map((_, i) => (
+                  <span key={i} className="h-1.5 w-1.5 rounded-full bg-gold/80" />
+                ))}
+              </span>
+            </>
+          )}
+          <span className="absolute left-1 top-1 z-10 grid h-6 w-6 place-items-center rounded-full bg-velvet/90 text-[11px] font-bold text-gold ring-1 ring-gold/40">
             {deckCount}
           </span>
-          {canReserveDeck && <BookmarkPlus size={13} className="absolute bottom-1.5 text-gold/70" />}
+          {canReserveDeck && <BookmarkPlus size={13} className="absolute bottom-1.5 z-10 text-gold/80 drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]" />}
         </button>
 
         {/* face-up slots */}

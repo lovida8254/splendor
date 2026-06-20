@@ -5,8 +5,8 @@ import { Crown } from "lucide-react";
 import { eligibleNobles, GEM_COLORS, Noble } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { Pip } from "./gems";
-import { NobleArt } from "./CardArt";
-import { NOBLE_IMAGE_FILES } from "@/lib/assets";
+import { ImageBg } from "./CardArt";
+import { NOBLE_BG, NOBLE_IMAGE_FILES } from "@/lib/assets";
 
 function initial(noble: Noble): string {
   const n = (noble.name ?? noble.id).trim();
@@ -24,19 +24,31 @@ export function NobleTile({ noble, eligible, size = "md" }: { noble: Noble; elig
       )}
       style={{ background: "linear-gradient(160deg, #322a4e, #1f1932)" }}
     >
+      {/* shared backdrop image (if provided) */}
+      {NOBLE_BG && (
+        <>
+          <ImageBg src={`nobles/${NOBLE_BG}`} />
+          <div className="pointer-events-none absolute inset-0 rounded-xl bg-black/45" />
+        </>
+      )}
+
       {/* crest */}
-      <div className="relative mb-1.5 flex items-center justify-between">
-        <span className="font-display text-lg font-bold leading-none text-gold">3</span>
-        <Crown size={14} className="text-gold/80" />
+      <div className="relative z-10 mb-1.5 flex items-center justify-between">
+        <span className="font-display text-lg font-bold leading-none text-gold drop-shadow-[0_1px_2px_rgba(0,0,0,.8)]">3</span>
+        <Crown size={14} className="text-gold/90" />
       </div>
       <div
-        className="mx-auto mb-1.5 grid h-9 w-9 place-items-center overflow-hidden rounded-full font-display text-lg font-bold text-gold ring-1 ring-gold/40"
+        className="relative z-10 mx-auto mb-1.5 grid h-9 w-9 place-items-center overflow-hidden rounded-full font-display text-lg font-bold text-gold ring-1 ring-gold/40"
         style={{ background: "radial-gradient(circle at 35% 30%, #4a4070, #221b38)" }}
         title={noble.name ?? noble.id}
       >
-        {NOBLE_IMAGE_FILES[noble.id] ? <NobleArt noble={noble} /> : initial(noble)}
+        {NOBLE_IMAGE_FILES[noble.id] ? (
+          <ImageBg src={`nobles/${NOBLE_IMAGE_FILES[noble.id]}`} fallback={initial(noble)} />
+        ) : (
+          initial(noble)
+        )}
       </div>
-      <div className="flex flex-wrap justify-center gap-1">
+      <div className="relative z-10 flex flex-wrap justify-center gap-1">
         {GEM_COLORS.filter((c) => noble.requirement[c] > 0).map((c) => (
           <Pip key={c} color={c} n={noble.requirement[c]} />
         ))}
