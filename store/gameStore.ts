@@ -47,6 +47,7 @@ export interface GameConfig {
   seed: number;
   turnSeconds?: number | null; // online turn time limit (null/0 = unlimited)
   aiTakeover?: boolean; // on timeout, let AI play the AFK human's turn
+  quick?: boolean; // public quick-match room
 }
 
 export interface PresenceMember {
@@ -152,8 +153,10 @@ interface Store {
   online: OnlineState | null;
   openOnline: () => void;
   closeOnline: () => void;
-  createRoom: (players: PlayerConfig[], turnSeconds?: number | null, aiTakeover?: boolean) => Promise<void>;
+  createRoom: (players: PlayerConfig[], turnSeconds?: number | null, aiTakeover?: boolean, quick?: boolean) => Promise<void>;
   joinRoom: (code: string) => Promise<boolean>;
+  quickMatch: () => Promise<void>;
+  matching: boolean;
   tryReconnect: () => Promise<void>;
   claimSeat: (seat: number) => Promise<void>;
   startRoom: () => Promise<void>;
@@ -376,6 +379,7 @@ export const useGame = create<Store>((set, get) => {
   let roomPoll: ReturnType<typeof setInterval> | null = null;
   let turnTimer: ReturnType<typeof setInterval> | null = null;
   let takeoverForLen = -1; // actions.length we already triggered a timeout takeover for
+  let quickStarting = false; // quick-match host has triggered auto-start
 
   /** The single connected client responsible for automation (AI seats, takeover, host handoff). */
   function effectiveDriverId(o: OnlineState, connected: Set<string>): string | null {
@@ -589,6 +593,8 @@ export const useGame = create<Store>((set, get) => {
       players: row.config.players as PlayerConfig[],
       seed: row.config.seed,
       turnSeconds: row.config.turnSeconds ?? null,
+      aiTakeover: row.config.aiTakeover,
+      quick: row.config.quick,
     };
     const incoming = (row.actions ?? []) as Action[];
     // A new seed means a rematch/reset — force a full rebuild.
@@ -600,6 +606,15 @@ export const useGame = create<Store>((set, get) => {
         game: null,
         online: { ...s.online, seats: row.seats ?? {}, hostId: row.host, status: "lobby", config, turnStartedAt: null },
       });
+      // quick match: host auto-starts as soon as all human seats are claimed
+      if (config.quick && row.host === s.online.clientId && !quickStarting) {
+        const humans = config.players.map((p, i) => ({ p, i })).filter((x) => !x.p.isAI);
+        const full = humans.length > 0 && humans.every((x) => (row.seats ?? {})[String(x.i)]);
+        if (full) {
+          quickStarting = true;
+          void get().startRoom();
+        }
+      }
       return;
     }
 
@@ -710,6 +725,7 @@ export const useGame = create<Store>((set, get) => {
     replayIndex: 0,
     replayPlaying: false,
     online: null,
+    matching: false,
     chat: [],
 
     startGame(players) {
@@ -1010,7 +1026,7 @@ export const useGame = create<Store>((set, get) => {
       get().leaveRoom();
     },
 
-    async createRoom(players, turnSeconds = 60, aiTakeover = true) {
+    async createRoom(players, turnSeconds = 60, aiTakeover = true, quick = false) {
       if (!supabase) {
         set((s) => ({ online: s.online ? { ...s.online, error: "온라인 미설정" } : s.online }));
         return;
@@ -1018,7 +1034,7 @@ export const useGame = create<Store>((set, get) => {
       clearTimers();
       const clientId = getClientId();
       const seed = (Math.floor(Math.random() * 1_000_000) + 1) | 0;
-      const config: GameConfig = { players, seed, turnSeconds: turnSeconds || null, aiTakeover };
+      const config: GameConfig = { players, seed, turnSeconds: turnSeconds || null, aiTakeover, quick };
       const firstHuman = players.findIndex((p) => !p.isAI);
       const seats: Record<string, string> = firstHuman >= 0 ? { [String(firstHuman)]: clientId } : {};
       let code = genRoomCode();
@@ -1060,6 +1076,8 @@ export const useGame = create<Store>((set, get) => {
         players: row.config.players as PlayerConfig[],
         seed: row.config.seed,
         turnSeconds: row.config.turnSeconds ?? null,
+        aiTakeover: row.config.aiTakeover,
+        quick: row.config.quick,
       };
       set({
         online: {
@@ -1079,6 +1097,54 @@ export const useGame = create<Store>((set, get) => {
       subscribeRoom(code);
       applyRoom(row);
       return true;
+    },
+
+    async quickMatch() {
+      if (!supabase) {
+        get().openOnline();
+        return;
+      }
+      if (!get().online) get().openOnline();
+      set({ matching: true });
+      try {
+        // 1) look for an open public quick room (recent, in lobby, with a free human seat)
+        const cutoff = new Date(Date.now() - 120000).toISOString();
+        const { data } = await supabase
+          .from("rooms")
+          .select("*")
+          .eq("status", "lobby")
+          .gte("updated_at", cutoff)
+          .order("updated_at", { ascending: false })
+          .limit(30);
+        const rooms = (data ?? []) as RoomRow[];
+        const myId = getClientId();
+        for (const r of rooms) {
+          if (!r.config?.quick || r.host === myId) continue;
+          const players = r.config.players ?? [];
+          const humanIdx = players.map((p, i) => ({ p, i })).filter((x) => !x.p.isAI).map((x) => x.i);
+          const free = humanIdx.find((i) => !(r.seats ?? {})[String(i)]);
+          if (free == null) continue;
+          const ok = await get().joinRoom(r.code);
+          if (!ok) continue;
+          const o = get().online;
+          const pl = o?.config?.players ?? [];
+          const hi = pl.map((p, i) => ({ p, i })).filter((x) => !x.p.isAI).map((x) => x.i);
+          const f = hi.find((i) => !o!.seats[String(i)]);
+          if (f != null) await get().claimSeat(f);
+          set({ matching: false });
+          return;
+        }
+        // 2) none found -> host a public quick room (2 humans), wait for an opponent
+        quickStarting = false;
+        await get().createRoom(
+          [{ name: "플레이어 1", isAI: false }, { name: "플레이어 2", isAI: false }],
+          60,
+          true,
+          true,
+        );
+      } finally {
+        set({ matching: false });
+      }
     },
 
     async tryReconnect() {
@@ -1155,6 +1221,7 @@ export const useGame = create<Store>((set, get) => {
       if (supabase && code && cid)
         supabase.from("presence").delete().eq("room", code).eq("client", cid).then(() => {});
       takeoverForLen = -1;
+      quickStarting = false;
       if (roomChannel && supabase) {
         supabase.removeChannel(roomChannel);
         roomChannel = null;
@@ -1169,6 +1236,7 @@ export const useGame = create<Store>((set, get) => {
         message: null,
         aiThinking: false,
         chat: [],
+        matching: false,
       });
     },
 

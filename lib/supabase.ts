@@ -48,6 +48,7 @@ export interface RoomRow {
     seed: number;
     turnSeconds?: number | null;
     aiTakeover?: boolean;
+    quick?: boolean; // public quick-match room
   };
   actions: unknown[];
   seats: Record<string, string>;
