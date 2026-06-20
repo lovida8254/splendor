@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import clsx from "clsx";
 import { BookOpen, X, Crown, Coins, Layers, Gem, Trophy, Bookmark } from "lucide-react";
 import { TokenColor } from "@/lib/engine";
@@ -42,9 +43,9 @@ export default function HowToPlay({ className, label = "게임 방법" }: { clas
         <BookOpen size={16} /> {label}
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[80] grid place-items-center bg-black/65 p-4 animate-fadein"
+          className="fixed inset-0 z-[100] grid place-items-center bg-black/65 p-4 animate-fadein"
           onClick={() => setOpen(false)}
         >
           <div
@@ -111,7 +112,8 @@ export default function HowToPlay({ className, label = "게임 방법" }: { clas
               확인
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
