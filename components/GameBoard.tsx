@@ -48,22 +48,20 @@ export default function GameBoard() {
         </div>
       </div>
 
-      <div className="fold-aware grid grid-cols-1 gap-3 md:grid-cols-[1fr_minmax(248px,288px)] md:gap-4">
-        {/* main column: card rows */}
-        <div className="space-y-3">
-          {levelsTopDown.map((lvl) => (
-            <CardRow key={lvl} level={lvl} />
-          ))}
-        </div>
-
-        {/* sidebar: log */}
-        <div className="space-y-3 md:space-y-4">
-          <LogPanel />
-        </div>
+      {/* card rows (full width) */}
+      <div className="space-y-3">
+        {levelsTopDown.map((lvl) => (
+          <CardRow key={lvl} level={lvl} />
+        ))}
       </div>
 
       {/* bottom dock: current player's gems, owned cards, reserved, nobles */}
       <PlayerDock />
+
+      {/* action log — at the very bottom */}
+      <div className="mt-3">
+        <LogPanel />
+      </div>
 
       {!replayActive && (
         <>
