@@ -5,7 +5,7 @@ import { ShoppingCart, BookmarkPlus } from "lucide-react";
 import { Card, CardSource, deficit, GameState, GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { GEM_META, GemJewel, Pip } from "./gems";
-import { PixelGem } from "./PixelGem";
+import { PixelScene } from "./PixelScene";
 
 function humanTurn(game: GameState): boolean {
   const cur = game.players[game.currentPlayerIndex];
@@ -51,50 +51,52 @@ export default function DevCard({
         "card-sheen relative flex h-[164px] flex-col overflow-hidden rounded-xl border p-2 shadow-velvet transition animate-pop",
         affordable ? "border-gold/70 animate-affordable" : "border-line2",
       )}
-      style={{ background: `linear-gradient(157deg, ${m.hex}2e 0%, #211a35 55%, #1a1430 100%)` }}
+      style={{ background: `linear-gradient(157deg, ${m.hex}22 0%, #1d1733 55%, #181228 100%)` }}
     >
-      {/* decorative arch glow */}
-      <div
-        className="pointer-events-none absolute -top-10 right-[-30%] h-28 w-28 rounded-full opacity-30 blur-xl"
-        style={{ background: m.hex }}
-      />
-      {/* pixel-art illustration */}
-      <div className="pointer-events-none absolute inset-x-0 top-6 grid place-items-center opacity-95">
-        <PixelGem color={card.bonus} size={50} />
-      </div>
-
       {/* header: prestige + bonus jewel */}
-      <div className="relative flex items-start justify-between">
+      <div className="relative z-10 flex shrink-0 items-start justify-between">
         <span
           className={clsx(
-            "grid h-8 w-8 place-items-center rounded-full font-display text-xl font-bold leading-none",
+            "grid h-7 w-7 place-items-center rounded-full font-display text-lg font-bold leading-none",
             card.prestige > 0 ? "gold-pill text-gold" : "text-transparent",
           )}
         >
           {card.prestige > 0 ? card.prestige : ""}
         </span>
         <span
-          className="grid h-9 w-9 place-items-center rounded-full ring-1 ring-gold/40"
-          style={{ background: "rgba(0,0,0,.25)" }}
+          className="grid h-8 w-8 place-items-center rounded-full ring-1 ring-gold/40"
+          style={{ background: "rgba(0,0,0,.3)" }}
           title={`보너스: ${m.label}`}
         >
-          <GemJewel color={card.bonus} size={26} />
+          <GemJewel color={card.bonus} size={22} />
         </span>
       </div>
 
-      {/* cost — wraps into rows so the footer never gets pushed off the card */}
-      <div className="relative mt-auto flex flex-wrap gap-1">
+      {/* pixel-art scene illustration */}
+      <div className="relative my-1 min-h-0 flex-1 overflow-hidden rounded-md ring-1 ring-black/25">
+        <div className="absolute inset-0">
+          <PixelScene level={card.level} color={card.bonus} cardId={card.id} />
+        </div>
+      </div>
+
+      {/* cost */}
+      <div className="flex shrink-0 flex-wrap items-center gap-1">
         {GEM_COLORS.filter((c) => card.cost[c] > 0).map((c) => (
           <Pip key={c} color={c} n={card.cost[c]} />
         ))}
         {GEM_COLORS.every((c) => card.cost[c] === 0) && (
           <span className="text-[11px] text-ink-muted2">무료</span>
         )}
+        {canPlay && !affordable && d.gold > 0 && (
+          <span className="ml-auto self-center rounded bg-black/40 px-1 text-[9px] text-ink-muted2">
+            부족 {d.gold}
+          </span>
+        )}
       </div>
 
-      {/* actions (always visible) */}
+      {/* actions */}
       {canPlay && (
-        <div className="relative mt-1.5 flex shrink-0 gap-1.5">
+        <div className="mt-1.5 flex shrink-0 gap-1.5">
           <button
             disabled={!affordable}
             onClick={() => openPurchase(buySource)}
@@ -124,12 +126,6 @@ export default function DevCard({
             </button>
           )}
         </div>
-      )}
-
-      {canPlay && !affordable && d.gold > 0 && (
-        <span className="pointer-events-none absolute right-2 top-11 rounded bg-black/40 px-1 text-[9px] text-ink-muted2">
-          부족 {d.gold}
-        </span>
       )}
     </div>
   );
