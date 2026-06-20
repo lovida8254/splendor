@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { BarChart3, X, Trophy, Crown, Bot, Wifi, Users, Trash2 } from "lucide-react";
+import { BarChart3, X, Trophy, Crown, Bot, Wifi, Users, Trash2, Globe, Loader2, Medal } from "lucide-react";
 import clsx from "clsx";
 import { loadRecords, computeStats, clearRecords, GameRecord, StatMode } from "@/lib/stats";
+import { fetchLeaderboard, LeaderEntry, myClientId } from "@/lib/leaderboard";
+import { supabaseEnabled } from "@/lib/supabase";
 
 const MODE_LABEL: Record<StatMode, string> = { ai: "vs AI", hotseat: "핫시트", online: "온라인" };
 const MODE_ICON: Record<StatMode, typeof Bot> = { ai: Bot, hotseat: Users, online: Wifi };
@@ -27,16 +29,28 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
 
 export default function StatsScreen({ className, label = "전적 / 통계" }: { className?: string; label?: string }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"me" | "global">("me");
   const [records, setRecords] = useState<GameRecord[]>([]);
+  const [leaders, setLeaders] = useState<LeaderEntry[] | null>(null);
+  const [loadingLb, setLoadingLb] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (open) setRecords(loadRecords());
   }, [open]);
+  useEffect(() => {
+    if (open && tab === "global") {
+      setLoadingLb(true);
+      fetchLeaderboard()
+        .then((l) => setLeaders(l))
+        .finally(() => setLoadingLb(false));
+    }
+  }, [open, tab]);
 
   const stats = computeStats(records);
   const recent = [...records].reverse().slice(0, 12);
+  const me = myClientId();
 
   const modal =
     open && mounted
@@ -55,8 +69,72 @@ export default function StatsScreen({ className, label = "전적 / 통계" }: { 
                 </button>
               </div>
 
+              {supabaseEnabled && (
+                <div className="flex gap-1 border-b border-line2 px-4 pt-3">
+                  {(["me", "global"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTab(t)}
+                      className={clsx(
+                        "flex items-center gap-1.5 rounded-t-lg px-3 py-2 text-sm font-semibold transition",
+                        tab === t ? "bg-[#262932] text-gold" : "text-ink-muted hover:text-ink",
+                      )}
+                    >
+                      {t === "me" ? <BarChart3 size={14} /> : <Globe size={14} />}
+                      {t === "me" ? "내 전적" : "글로벌 리더보드"}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-4 p-4 text-ink">
-                {records.length === 0 ? (
+                {tab === "global" ? (
+                  loadingLb ? (
+                    <p className="flex items-center justify-center gap-2 py-10 text-sm text-ink-muted2">
+                      <Loader2 size={16} className="animate-spin" /> 불러오는 중...
+                    </p>
+                  ) : !leaders || leaders.length === 0 ? (
+                    <p className="py-10 text-center text-sm text-ink-muted2">
+                      아직 온라인 전적이 없습니다.<br />온라인 게임을 끝내면 리더보드에 등록됩니다.
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 px-2 pb-1 text-[10px] uppercase tracking-wider text-ink-muted2">
+                        <span className="w-7 text-center">#</span>
+                        <span className="flex-1">플레이어</span>
+                        <span className="w-12 text-right">승/판</span>
+                        <span className="w-10 text-right">승률</span>
+                        <span className="w-8 text-right">최고</span>
+                      </div>
+                      {leaders.slice(0, 50).map((e, i) => (
+                        <div
+                          key={e.client}
+                          className={clsx(
+                            "flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px]",
+                            e.client === me ? "bg-gold/15 ring-1 ring-gold/40" : "bg-black/20",
+                          )}
+                        >
+                          <span className="flex w-7 justify-center">
+                            {i < 3 ? (
+                              <Medal size={15} className={i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : "text-amber-700"} />
+                            ) : (
+                              <span className="text-ink-muted2">{i + 1}</span>
+                            )}
+                          </span>
+                          <span className="flex-1 truncate font-semibold text-ink">
+                            {e.name}
+                            {e.client === me && <span className="ml-1 text-[10px] text-gold">(나)</span>}
+                          </span>
+                          <span className="w-12 text-right text-ink-muted">
+                            <span className="text-gold">{e.wins}</span>/{e.games}
+                          </span>
+                          <span className="w-10 text-right text-ink-muted">{Math.round(e.winRate * 100)}%</span>
+                          <span className="w-8 text-right text-ink-muted2">{e.bestPrestige}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : records.length === 0 ? (
                   <p className="py-10 text-center text-sm text-ink-muted2">아직 완료된 게임이 없습니다.<br />게임을 한 판 끝내면 전적이 기록됩니다.</p>
                 ) : (
                   <>

@@ -274,6 +274,27 @@ export const useGame = create<Store>((set, get) => {
       meNobles: me ? me.nobles.length : null,
       turns: game.turnCount,
     });
+
+    // Online: record my result to the server for the global leaderboard.
+    if (mode === "online" && me && s.online && supabase) {
+      supabase
+        .from("results")
+        .upsert(
+          {
+            game_id: `${s.online.code}:${seed}`,
+            client: s.online.clientId,
+            name: me.name,
+            won: game.winnerId === me.id,
+            prestige: me.prestige,
+            cards: me.purchased.length,
+            nobles: me.nobles.length,
+            players: game.players.length,
+            turns: game.turnCount,
+          },
+          { onConflict: "game_id,client", ignoreDuplicates: true },
+        )
+        .then(() => {});
+    }
   }
 
   /** Apply a legal action to the live game, recording it for undo/replay. */

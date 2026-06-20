@@ -28,6 +28,19 @@ export interface PresenceRow {
   last_seen: string;
 }
 
+export interface ResultRow {
+  game_id: string;
+  client: string;
+  name: string;
+  won: boolean;
+  prestige: number;
+  cards: number;
+  nobles: number;
+  players: number;
+  turns: number;
+  created_at?: string;
+}
+
 export interface RoomRow {
   code: string;
   config: {
