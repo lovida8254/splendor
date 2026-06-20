@@ -28,6 +28,14 @@ import {
 
 const SAVE_KEY = "splendor:save:v2";
 const SETTINGS_KEY = "splendor:settings:v1";
+const ROOM_KEY = "splendor:room"; // last joined online room (for auto-reconnect)
+
+function rememberRoom(code: string) {
+  if (typeof window !== "undefined") window.localStorage.setItem(ROOM_KEY, code);
+}
+function forgetRoom() {
+  if (typeof window !== "undefined") window.localStorage.removeItem(ROOM_KEY);
+}
 
 export type Speed = "slow" | "normal" | "fast";
 const SPEED_MS: Record<Speed, number> = { slow: 1100, normal: 600, fast: 280 };
@@ -134,6 +142,7 @@ interface Store {
   closeOnline: () => void;
   createRoom: (players: PlayerConfig[]) => Promise<void>;
   joinRoom: (code: string) => Promise<boolean>;
+  tryReconnect: () => Promise<void>;
   claimSeat: (seat: number) => Promise<void>;
   startRoom: () => Promise<void>;
   rematch: () => Promise<void>;
@@ -799,6 +808,7 @@ export const useGame = create<Store>((set, get) => {
       set({
         online: { view: "room", code, clientId, hostId: clientId, seats, status: "lobby", config, error: null },
       });
+      rememberRoom(code);
       subscribeRoom(code);
     },
 
@@ -831,9 +841,22 @@ export const useGame = create<Store>((set, get) => {
           error: null,
         },
       });
+      rememberRoom(code);
       subscribeRoom(code);
       applyRoom(row);
       return true;
+    },
+
+    async tryReconnect() {
+      if (!supabase || typeof window === "undefined") return;
+      const code = window.localStorage.getItem(ROOM_KEY);
+      const s = get();
+      if (!code || s.online || s.game) return;
+      const ok = await get().joinRoom(code);
+      if (!ok) {
+        forgetRoom();
+        get().leaveRoom();
+      }
     },
 
     async claimSeat(seat) {
@@ -879,6 +902,7 @@ export const useGame = create<Store>((set, get) => {
 
     leaveRoom() {
       clearTimers();
+      forgetRoom();
       if (roomPoll) {
         clearInterval(roomPoll);
         roomPoll = null;
