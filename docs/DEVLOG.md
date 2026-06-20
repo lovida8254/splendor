@@ -4,6 +4,72 @@
 
 ---
 
+## 2026-06-21 — 온라인 멀티플레이 본격화 + 전적/리더보드 + 빠른매칭 + 모바일 반응형
+
+### 요약
+로컬 게임 위주였던 제품에 **Supabase 기반 온라인 멀티플레이**를 전면 도입하고, 연결 안정화
+(재접속·타임아웃·오프라인 대행·호스트 위임), 소셜(채팅·관전·presence), **전적/글로벌 리더보드**,
+**빠른 매칭(2/3/4인)** 까지 붙여 완성도를 끌어올렸다. 마지막으로 **일반 스마트폰 반응형**을 정밀 최적화.
+모든 기능은 다중 클라이언트 Playwright 시나리오로 라이브/로컬 검증.
+
+### 온라인 멀티플레이 (Supabase, 전용 `splendor` 스키마)
+- **방 시스템**: 방 만들기/참가/좌석 점유/시작/나가기, **초대 링크 + 5자리 코드**, 딥링크 `?room=`.
+  액션 소싱(config{players,seed} + actions[])으로 결정적 엔진 재구성. `lib/supabase.ts`, `store/gameStore.ts`.
+- **동기화 = Realtime + 1.2초 폴링 폴백**(커스텀 스키마 realtime 불안정 대비). 현재 좌석만 조작(`controlsCurrent`/`canActMain`).
+- **같은 인원 재게임**(시드만 새로, 좌석 유지) + **게임오버 모달 개선**.
+- **재접속 자동복귀**: 방 코드 localStorage 저장 → 새로고침/재접속 시 마지막 방·좌석으로 자동 복귀.
+- **채팅**: 우하단 위젯(미읽음 배지), `splendor.messages` 테이블 + 폴링/realtime. `components/Chat.tsx`.
+- **보유 도크 → 좌측 슬라이드 드로어**(`DockDrawer.tsx`)로 전환(보드 정리).
+
+### 연결 안정화 (presence 기반 통합 driver)
+- **턴 타임아웃 + AI 대행**: 방 생성 시 제한시간(30/60/120/무제한) 선택, 초과 시 AI가 대신 진행 + 카운트다운 표시.
+- **presence(접속 표시)**: `splendor.presence` 테이블 3초 하트비트 + 폴링 → 로비 좌석/인게임 패널 접속 점(초록/빨강/회색), 접속 수.
+- **관전 모드**: 좌석 미점유 시 자동 관전(읽기 전용), "관전 중" 배지 + 로비 관전자 목록.
+- **AI 대행 on/off** 토글(방 생성).
+- **오프라인 좌석 즉시 AI 대행**: 현재 차례 사람이 끊기면(≈8초 감지) 타임아웃 대기 없이 즉시 AI가 진행.
+- **호스트 자동 위임**: 호스트가 나가면 접속 중인 다른 좌석이 `rooms.host`를 자동 인수 + AI 구동 인계.
+  → `maybeHostAI`/`checkTurnTimeout`를 **presence 기준 `driveAutomation`/`effectiveDriverId`** 로 통합.
+
+### 전적/통계 + 글로벌 리더보드
+- **로컬 전적**(기기, localStorage): 게임 종료 시 자동 기록(모드·승패·명성·카드·귀족·턴), 시그니처 중복방지.
+  메인 메뉴 "전적/통계" 모달(총게임/승률/최고점/모드별/최근기록/초기화). `lib/stats.ts`, `components/StatsScreen.tsx`.
+- **글로벌 리더보드**(서버): 온라인 종료 시 각 클라이언트가 자기 결과를 `splendor.results`에 upsert(중복방지),
+  클라이언트별 집계(승/판/승률/최고점) 정렬. StatsScreen "글로벌 리더보드" 탭(메달·내 순위 강조). `lib/leaderboard.ts`.
+
+### 빠른 매칭
+- **공개방 자동 매칭**: `config.quick` 공개 대기방을 탐색→빈 좌석 자동 입장, 없으면 공개방 생성. 인원 차면 호스트 자동 시작.
+- **N인 선택(2/3/4)**: 같은 인원 수의 공개방끼리만 매칭. 로비에 인원 세그먼트 + "빠른 매칭" 버튼.
+
+### 링크 공유 / 카피
+- **OG 이미지**(`public/og.png`, `scripts/gen-og.mjs`) + openGraph/twitter 메타데이터(`app/layout.tsx`).
+- 메인 부제 → "르네상스 보석상 전략 보드게임".
+
+### 모바일 반응형 최적화 (PC/폴드 영향 없음)
+- **카드 줄 유동 그리드**(min-w 제거, `minmax(0,1fr)`) → 폰에서 가로 스크롤 없이 덱+4장 항상 맞춤.
+- **DevCard 반응형**: 점수·보석·**비용코인(Pip "cost")**·버튼을 모바일 축소/스택, 데스크톱은 기존 큰 사이즈 유지.
+- **공급처 코인 1줄**: 모바일 코인 `md`(데스크톱 `lg`) + 컬럼/갭 축소(`useIsMobile`).
+- **카드 높이 통일**: 비용 코인 줄 수 차이로 줄마다 키가 달랐던 문제 → 모바일(≥360, `cm` 브레이크포인트) 고정 `h-[172px]`로 통일,
+  극단 좁은 커버(<360)는 `min-h`로 늘려 잘림 방지. **4코스트 카드 버튼 잘림 해결**.
+- 커스텀 브레이크포인트 추가: `cm:360px`, `xs:400px`.
+
+### Supabase 스키마 (사용자가 SQL Editor에서 실행)
+- `supabase/splendor_schema.sql`(rooms), `chat_schema.sql`(messages), `presence_schema.sql`(presence), `results_schema.sql`(results).
+  전부 RLS 활성 + 코드 기반 접근 정책.
+
+### 검증
+- typecheck 클린, vitest(엔진 fuzz + store + **stats 단위**) 통과.
+- **다중 클라이언트 Playwright 시나리오 전부 통과**: `mp-test`(동기화+재게임), `reconnect-test`, `timeout-test`,
+  `spectator-test`, `presence-test`(라이브), `failover-test`(오프라인 대행+호스트 위임), `quickmatch-test`,
+  `quickmatch3-test`, `leaderboard-live-test`(라이브 완주→리더보드), `stats-ui/record-test`.
+- 반응형: `fold-test`에 일반 폰(360/390/412/430) 뷰포트 추가 → **9개 뷰포트 overflow 0·에러 0**, 카드 클리핑 0.
+
+### 주요 버그픽스
+- **Supabase 쿼리 미실행**: `void supabase…update()`는 `await`/`.then()`이 없으면 실행 안 됨 → 호스트 위임 write가 누락되던 것 수정.
+- **applyRoom 설정 누락**: 방 동기화 시 `aiTakeover`/`quick`가 빠져 "대행 OFF"·"자동 시작"이 무시되던 것 → config에 포함.
+- presence 폴링 기준 오프라인 판정(8초)·하트비트(3초)로 반응성 조정.
+
+---
+
 ## 2026-06-20 (3) — AI 사고표시·점수 팝업·사운드·픽셀 일러스트·카드 플라이
 
 ### 추가
