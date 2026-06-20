@@ -27,7 +27,7 @@ const config: Config = {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        velvet: "0 8px 28px rgba(0,0,0,.45)",
+        velvet: "0 12px 30px rgba(0,0,0,.55), 0 4px 10px rgba(0,0,0,.45)",
       },
     },
   },

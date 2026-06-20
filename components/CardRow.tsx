@@ -41,7 +41,7 @@ export default function CardRow({ level }: { level: CardLevel }) {
           onClick={() => reserve({ from: "deck", level })}
           title={deckReserveCheck.ok ? "맨 위 카드 블라인드 예약 (골드 획득)" : deckReserveCheck.reason || `레벨 ${level} 덱`}
           className={clsx(
-            "relative flex h-[164px] flex-col items-center justify-center overflow-hidden rounded-xl border text-center transition",
+            "relative flex h-[164px] flex-col items-center justify-center overflow-hidden rounded-xl border text-center shadow-velvet transition",
             canReserveDeck ? "border-gold/60 hover:brightness-110" : "border-line2",
           )}
           style={
