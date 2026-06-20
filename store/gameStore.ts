@@ -155,7 +155,7 @@ interface Store {
   closeOnline: () => void;
   createRoom: (players: PlayerConfig[], turnSeconds?: number | null, aiTakeover?: boolean, quick?: boolean) => Promise<void>;
   joinRoom: (code: string) => Promise<boolean>;
-  quickMatch: () => Promise<void>;
+  quickMatch: (players?: number) => Promise<void>;
   matching: boolean;
   tryReconnect: () => Promise<void>;
   claimSeat: (seat: number) => Promise<void>;
@@ -1099,15 +1099,16 @@ export const useGame = create<Store>((set, get) => {
       return true;
     },
 
-    async quickMatch() {
+    async quickMatch(playersCount = 2) {
       if (!supabase) {
         get().openOnline();
         return;
       }
+      const count = Math.min(4, Math.max(2, playersCount | 0));
       if (!get().online) get().openOnline();
       set({ matching: true });
       try {
-        // 1) look for an open public quick room (recent, in lobby, with a free human seat)
+        // 1) look for an open public quick room of the same size (recent, lobby, free seat)
         const cutoff = new Date(Date.now() - 120000).toISOString();
         const { data } = await supabase
           .from("rooms")
@@ -1115,12 +1116,13 @@ export const useGame = create<Store>((set, get) => {
           .eq("status", "lobby")
           .gte("updated_at", cutoff)
           .order("updated_at", { ascending: false })
-          .limit(30);
+          .limit(40);
         const rooms = (data ?? []) as RoomRow[];
         const myId = getClientId();
         for (const r of rooms) {
           if (!r.config?.quick || r.host === myId) continue;
           const players = r.config.players ?? [];
+          if (players.length !== count) continue; // match same player count only
           const humanIdx = players.map((p, i) => ({ p, i })).filter((x) => !x.p.isAI).map((x) => x.i);
           const free = humanIdx.find((i) => !(r.seats ?? {})[String(i)]);
           if (free == null) continue;
@@ -1134,14 +1136,13 @@ export const useGame = create<Store>((set, get) => {
           set({ matching: false });
           return;
         }
-        // 2) none found -> host a public quick room (2 humans), wait for an opponent
+        // 2) none found -> host a public quick room of the requested size, wait for opponents
         quickStarting = false;
-        await get().createRoom(
-          [{ name: "플레이어 1", isAI: false }, { name: "플레이어 2", isAI: false }],
-          60,
-          true,
-          true,
-        );
+        const newPlayers: PlayerConfig[] = Array.from({ length: count }, (_, i) => ({
+          name: `플레이어 ${i + 1}`,
+          isAI: false,
+        }));
+        await get().createRoom(newPlayers, 60, true, true);
       } finally {
         set({ matching: false });
       }

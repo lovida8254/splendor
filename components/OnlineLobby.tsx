@@ -253,6 +253,7 @@ export default function OnlineLobby() {
   const quickMatch = useGame((s) => s.quickMatch);
   const matching = useGame((s) => s.matching);
   const [tab, setTab] = useState<"create" | "join">("create");
+  const [qmCount, setQmCount] = useState(2);
 
   // deep-link auto-join (?room=CODE)
   useEffect(() => {
@@ -285,13 +286,28 @@ export default function OnlineLobby() {
           <Room />
         ) : (
           <>
+            <div className="mb-2 flex gap-2">
+              {[2, 3, 4].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setQmCount(n)}
+                  disabled={matching}
+                  className={clsx(
+                    "flex-1 rounded-lg border py-2 text-sm font-semibold transition disabled:opacity-50",
+                    qmCount === n ? "border-gold bg-gold/15 text-gold" : "border-line2 bg-panel text-ink-muted hover:bg-panel-2",
+                  )}
+                >
+                  {n}인
+                </button>
+              ))}
+            </div>
             <button
-              onClick={() => quickMatch()}
+              onClick={() => quickMatch(qmCount)}
               disabled={matching || !onlineAvailable}
               className="btn-gold mb-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-display font-bold tracking-wide disabled:opacity-60"
             >
               {matching ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-              {matching ? "상대를 찾는 중..." : "빠른 매칭 (2인)"}
+              {matching ? "상대를 찾는 중..." : `빠른 매칭 (${qmCount}인)`}
             </button>
             <div className="mb-3 flex items-center gap-2 text-[11px] text-ink-muted2">
               <span className="h-px flex-1 bg-line2" /> 또는 <span className="h-px flex-1 bg-line2" />
