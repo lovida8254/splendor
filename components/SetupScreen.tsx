@@ -53,7 +53,7 @@ export default function SetupScreen() {
           <Crown size={26} />
         </div>
         <h1 className="brand-text font-display text-5xl font-bold tracking-[0.18em]">SPLENDOR</h1>
-        <p className="mt-2 text-sm text-ink-muted">르네상스 보석상 · 엔진 빌딩 게임</p>
+        <p className="mt-2 text-sm text-ink-muted">르네상스 보석상 전략 보드게임</p>
       </div>
 
       {canResume && (
