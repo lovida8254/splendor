@@ -1,10 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { Check, X, Coins } from "lucide-react";
 import { GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { GEM_META, GemToken } from "./gems";
+
+/** True on phone widths (<640px). SSR-safe: false until mounted. */
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const on = () => setMobile(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return mobile;
+}
 
 export default function TokenBank() {
   const game = useGame((s) => s.game)!;
@@ -13,6 +27,7 @@ export default function TokenBank() {
   const clearSelection = useGame((s) => s.clearSelection);
   const confirmTake = useGame((s) => s.confirmTake);
   const interactive = useGame((s) => s.canActMain());
+  const coinSize = useIsMobile() ? "md" : "lg"; // shrink coins on phones so all 6 fit one row
 
   const sel = selection.tokens;
   const selectedTotal = GEM_COLORS.reduce((s, c) => s + (sel[c] ?? 0), 0);
@@ -56,14 +71,14 @@ export default function TokenBank() {
         )}
       </div>
 
-      {/* horizontal coin row — fits the empty space beside the nobles */}
-      <div className="flex flex-1 flex-wrap items-start justify-around gap-x-2 gap-y-2">
+      {/* horizontal coin row — fits the empty space beside the nobles (single row on phones) */}
+      <div className="flex flex-1 flex-wrap items-start justify-around gap-x-1 gap-y-2 sm:gap-x-2">
         {GEM_COLORS.map((c) => (
-          <div key={c} className="flex w-[52px] flex-col items-center gap-1">
+          <div key={c} className="flex w-11 flex-col items-center gap-1 sm:w-[52px]">
             <GemToken
               color={c}
               count={game.pool[c]}
-              size="lg"
+              size={coinSize}
               stack
               selected={(sel[c] ?? 0) > 0}
               highlight={interactive && game.pool[c] > 0}
@@ -78,8 +93,8 @@ export default function TokenBank() {
           </div>
         ))}
         {/* gold (reserve only) */}
-        <div className="flex w-[52px] flex-col items-center gap-1 opacity-95">
-          <GemToken color="gold" count={game.pool.gold} size="lg" stack testId="supply-gold" />
+        <div className="flex w-11 flex-col items-center gap-1 opacity-95 sm:w-[52px]">
+          <GemToken color="gold" count={game.pool.gold} size={coinSize} stack testId="supply-gold" />
           <span className="text-[10px] font-medium text-ink-muted">★</span>
           <span className="text-[10px] text-ink-muted2">{game.pool.gold}</span>
         </div>

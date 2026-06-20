@@ -232,7 +232,7 @@ export function Pip({ color, n, size = "sm" }: { color: TokenColor; n: number; s
   const m = GEM_META[color];
   const dim =
     size === "cost"
-      ? "h-6 w-6 text-xs sm:h-9 sm:w-9 sm:text-base" // compact on phones, large on wide screens
+      ? "h-5 w-5 text-[11px] sm:h-9 sm:w-9 sm:text-base" // compact on phones, large on wide screens
       : size === "md"
         ? "h-9 w-9 text-base"
         : size === "xs"
