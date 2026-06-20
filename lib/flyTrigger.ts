@@ -1,4 +1,5 @@
 import { useFly } from "@/store/flyStore";
+import { CARD_BG_BY_LEVEL_COLOR, CARD_IMAGE_FILES } from "@/lib/assets";
 import {
   Action,
   autoPayment,
@@ -9,11 +10,19 @@ import {
   TokenColor,
 } from "@/lib/engine";
 
+const FLIGHT_MS = 620;
+
 interface Move {
   color: TokenColor;
   from: string; // CSS selector
   to: string;
   kind?: "coin" | "card";
+  card?: Card; // for card flights
+}
+
+/** Resolved card art filename (per-id, then level+color), or null. */
+function cardArt(card: Card): string | null {
+  return CARD_IMAGE_FILES[card.id] ?? CARD_BG_BY_LEVEL_COLOR[`${card.level}_${card.bonus}`] ?? null;
 }
 
 function centerOf(sel: string): { x: number; y: number } | null {
@@ -48,36 +57,44 @@ function findCard(
   return game.players[playerIdx].reserved.find((c) => c.id === source.cardId) ?? null;
 }
 
-function spawn(moves: Move[]) {
+function spawn(moves: Move[]): number {
   const flights = [];
   let i = 0;
+  let maxEnd = 0;
   for (const m of moves) {
     const a = centerOf(m.from);
     const b = centerOf(m.to);
     if (a && b) {
       const kind = m.kind ?? "coin";
+      const hold = kind === "card" ? 1500 : 900; // hover at source before flying
+      const delay = i * 70;
       flights.push({
         color: m.color,
         x0: a.x,
         y0: a.y,
         x1: b.x,
         y1: b.y,
-        delay: i * 70,
+        delay,
         kind,
-        hold: kind === "card" ? 1500 : 900, // hover at source before flying
+        hold,
+        cardSrc: m.card ? cardArt(m.card) : undefined,
+        cardLevel: m.card?.level,
+        cardId: m.card?.id,
       });
+      maxEnd = Math.max(maxEnd, delay + hold + FLIGHT_MS);
       i++;
     }
   }
   if (flights.length) useFly.getState().spawn(flights);
+  return maxEnd;
 }
 
 /**
  * Spawn token-flight animations for an action, based on the pre-action state.
  * Covers both human and AI moves. No-op outside the browser.
  */
-export function triggerFly(prev: GameState, action: Action): void {
-  if (typeof document === "undefined") return;
+export function triggerFly(prev: GameState, action: Action): number {
+  if (typeof document === "undefined") return 0;
   const idx = prev.currentPlayerIndex;
   const moves: Move[] = [];
 
@@ -95,7 +112,8 @@ export function triggerFly(prev: GameState, action: Action): void {
         action.source.from === "board"
           ? prev.board[action.source.level][action.source.slot]
           : prev.decks[action.source.level][prev.decks[action.source.level].length - 1];
-      if (card) moves.push({ color: card.bonus, from: cardSourceSel(action.source), to: playerPanelSel(idx), kind: "card" });
+      if (card)
+        moves.push({ color: card.bonus, from: cardSourceSel(action.source), to: playerPanelSel(idx), kind: "card", card });
       if (prev.pool.gold > 0)
         moves.push({ color: "gold", from: supplySel("gold"), to: playerSel(idx, "gold") });
       break;
@@ -104,7 +122,7 @@ export function triggerFly(prev: GameState, action: Action): void {
       const card = findCard(prev, action.source, idx);
       if (!card) break;
       // the bought card flies to the player's panel
-      moves.push({ color: card.bonus, from: cardSourceSel(action.source), to: playerPanelSel(idx), kind: "card" });
+      moves.push({ color: card.bonus, from: cardSourceSel(action.source), to: playerPanelSel(idx), kind: "card", card });
       const pay = action.payment ?? autoPayment(prev.players[idx], card);
       for (const c of TOKEN_COLORS) {
         for (let k = 0; k < (pay[c] ?? 0); k++) {
@@ -114,7 +132,7 @@ export function triggerFly(prev: GameState, action: Action): void {
       break;
     }
     default:
-      return;
+      return 0;
   }
-  spawn(moves);
+  return spawn(moves);
 }

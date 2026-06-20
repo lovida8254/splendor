@@ -13,6 +13,10 @@ export interface Flight {
   delay: number;
   kind?: "coin" | "card";
   hold?: number; // ms to hover at the source before flying
+  // for card flights: the full card art so the whole card floats up
+  cardSrc?: string | null;
+  cardLevel?: 1 | 2 | 3;
+  cardId?: string;
 }
 
 let seq = 0;

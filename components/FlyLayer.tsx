@@ -3,22 +3,23 @@
 import { useEffect, useState } from "react";
 import { Flight, useFly } from "@/store/flyStore";
 import { CoinFace, GEM_META } from "./gems";
-import { PixelGem } from "./PixelGem";
+import { PixelScene } from "./PixelScene";
 
-function CardChip({ color }: { color: Flight["color"] }) {
-  const m = GEM_META[color];
+/** The full card floating during a card flight (real art if available). */
+function CardChip({ f }: { f: Flight }) {
+  const m = GEM_META[f.color];
   return (
-    <span
-      className="grid place-items-center rounded-md ring-1 ring-gold/40"
-      style={{
-        width: 34,
-        height: 46,
-        background: `linear-gradient(157deg, ${m.hex}55, #1a1430 75%)`,
-        boxShadow: "0 6px 14px rgba(0,0,0,.5)",
-      }}
+    <div
+      className="overflow-hidden rounded-xl border-2 border-gold/70 shadow-[0_14px_34px_rgba(0,0,0,.6)]"
+      style={{ width: 86, height: 150, background: `linear-gradient(157deg, ${m.hex}33, #181228)` }}
     >
-      <PixelGem color={color} size={26} />
-    </span>
+      {f.cardSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={`cards/${f.cardSrc}`} alt="" className="h-full w-full object-cover" draggable={false} />
+      ) : (
+        <PixelScene level={f.cardLevel ?? 1} color={f.color} cardId={f.cardId ?? "x"} />
+      )}
+    </div>
   );
 }
 
@@ -70,7 +71,7 @@ function FlyToken({ f, onDone }: { f: Flight; onDone: () => void }) {
         willChange: "transform, opacity",
       }}
     >
-      {f.kind === "card" ? <CardChip color={f.color} /> : <CoinFace color={f.color} size={30} />}
+      {f.kind === "card" ? <CardChip f={f} /> : <CoinFace color={f.color} size={30} />}
     </span>
   );
 }

@@ -180,17 +180,19 @@ export const useGame = create<Store>((set, get) => {
       set({ message: v.reason ?? "잘못된 행동" });
       return;
     }
-    triggerFly(s.game, action);
+    const animMs = triggerFly(s.game, action);
     const next = applyAction(s.game, action, s.rng);
     const actions = [...s.actions, action];
     const history = [...s.history, next];
     set({ game: next, actions, history, selection: { tokens: {} }, message: null });
     runEffects(s.game, next, action);
     if (s.config) persist(s.config, actions);
-    scheduleAI();
+    scheduleAI(animMs);
   }
 
-  function scheduleAI() {
+  // The next AI move waits for the current action's fly animation to finish,
+  // but never less than the speed setting.
+  function scheduleAI(animMs = 0) {
     if (aiTimer) {
       clearTimeout(aiTimer);
       aiTimer = null;
@@ -217,19 +219,18 @@ export const useGame = create<Store>((set, get) => {
       }
       try {
         const action = aiAction(st.game, st.rng);
-        triggerFly(st.game, action);
+        const nextAnim = triggerFly(st.game, action);
         const next = applyAction(st.game, action, st.rng);
         const actions = [...st.actions, action];
         const history = [...st.history, next];
         set({ game: next, actions, history });
         runEffects(st.game, next, action);
         if (st.config) persist(st.config, actions);
+        scheduleAI(nextAnim);
       } catch (e) {
         set({ aiThinking: false, message: `AI 오류: ${(e as Error).message}` });
-        return;
       }
-      scheduleAI();
-    }, SPEED_MS[get().speed]);
+    }, Math.max(SPEED_MS[get().speed], animMs));
   }
 
   function findCard(
