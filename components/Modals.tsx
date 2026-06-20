@@ -269,8 +269,16 @@ export function GameOverModal() {
   const online = useGame((s) => s.online);
   const enterReplay = useGame((s) => s.enterReplay);
   const replayActive = useGame((s) => s.replayActive);
+  const startGame = useGame((s) => s.startGame);
+  const rematch = useGame((s) => s.rematch);
+  const config = useGame((s) => s.config);
   if (game.phase !== "finished" || replayActive) return null;
   const exit = online ? leaveRoom : abandon;
+  const isHost = !online || online.clientId === online.hostId;
+  const again = () => {
+    if (online) rematch();
+    else if (config) startGame(config.players);
+  };
 
   const ranked = standings(game);
   return (
@@ -293,13 +301,24 @@ export function GameOverModal() {
           </div>
         ))}
       </div>
-      <div className="mt-5 flex gap-2">
-        <button onClick={() => enterReplay()} className="flex-1 rounded-xl border border-gold/50 bg-panel py-3 font-semibold text-gold transition hover:bg-panel-2">
-          리플레이 보기
-        </button>
-        <button onClick={() => exit()} className="flex-1 rounded-xl bg-gradient-to-b from-[#e7cf86] to-[#cda14a] py-3 font-display font-bold tracking-wider text-[#2a200a] transition hover:brightness-105">
-          {online ? "방 나가기" : "새 게임"}
-        </button>
+      <div className="mt-5 space-y-2">
+        {isHost ? (
+          <button onClick={again} className="btn-gold w-full rounded-xl py-3 font-display font-bold tracking-wider">
+            다시 하기 (같은 인원)
+          </button>
+        ) : (
+          <p className="rounded-xl border border-line2 bg-panel py-3 text-center text-sm text-ink-muted">
+            방장의 재시작을 기다리는 중...
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button onClick={() => enterReplay()} className="flex-1 rounded-xl border border-gold/50 bg-panel py-2.5 font-semibold text-gold transition hover:bg-panel-2">
+            리플레이 보기
+          </button>
+          <button onClick={() => exit()} className="flex-1 rounded-xl border border-line2 bg-panel py-2.5 font-semibold text-ink-muted transition hover:bg-panel-2">
+            {online ? "방 나가기" : "메인으로"}
+          </button>
+        </div>
       </div>
     </Backdrop>
   );

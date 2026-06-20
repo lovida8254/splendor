@@ -88,8 +88,21 @@ console.log("A state:", JSON.stringify(sa));
 console.log("B state:", JSON.stringify(sb));
 
 const synced = sa.actions === sb.actions && sa.cur === sb.cur && sa.actions >= 1;
+console.log("sync:", synced);
+
+// rematch (host = A) and verify both reset to a fresh game
+await A.evaluate(async () => {
+  await window.__game.getState().rematch();
+});
+await wait(2500);
+const ra = await snap(A);
+const rb = await snap(B);
+console.log("after rematch A:", JSON.stringify(ra), "B:", JSON.stringify(rb));
+const rematched = ra.actions === 0 && rb.actions === 0 && ra.turn === 0 && rb.turn === 0;
+
 console.log(`errors=${errs.length}` + (errs.length ? ` -> ${errs.slice(0, 2).join(" | ")}` : ""));
-console.log(synced ? "\nMULTIPLAYER SYNC OK" : "\nMULTIPLAYER SYNC FAILED");
+const ok = synced && rematched && errs.length === 0;
+console.log(ok ? "\nMULTIPLAYER + REMATCH OK" : "\nMULTIPLAYER TEST FAILED");
 
 await browser.close();
-process.exit(synced && errs.length === 0 ? 0 : 1);
+process.exit(ok ? 0 : 1);

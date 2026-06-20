@@ -136,6 +136,7 @@ interface Store {
   joinRoom: (code: string) => Promise<boolean>;
   claimSeat: (seat: number) => Promise<void>;
   startRoom: () => Promise<void>;
+  rematch: () => Promise<void>;
   leaveRoom: () => void;
   controlsCurrent: () => boolean;
   canActMain: () => boolean;
@@ -380,6 +381,8 @@ export const useGame = create<Store>((set, get) => {
     if (!s.online || s.online.code !== row.code) return;
     const config: GameConfig = { players: row.config.players as PlayerConfig[], seed: row.config.seed };
     const incoming = (row.actions ?? []) as Action[];
+    // A new seed means a rematch/reset — force a full rebuild.
+    const seedChanged = !!s.online.config && s.online.config.seed !== config.seed;
 
     // Still in the lobby: just track metadata; no game to build yet.
     if (row.status === "lobby") {
@@ -392,7 +395,7 @@ export const useGame = create<Store>((set, get) => {
 
     // Playing/finished but we're already at/ahead of this revision (e.g. our own
     // optimistic echo) and the game is built — only refresh metadata.
-    if (s.game && incoming.length <= s.actions.length) {
+    if (!seedChanged && s.game && incoming.length <= s.actions.length) {
       set({
         online: {
           ...s.online,
@@ -412,8 +415,8 @@ export const useGame = create<Store>((set, get) => {
       return;
     }
     const game = history[history.length - 1];
-    // animate/sound the newest action (covers opponents' moves)
-    if (history.length >= 2) {
+    // animate/sound the newest action (covers opponents' moves); skip on rematch reset
+    if (!seedChanged && history.length >= 2 && incoming.length === s.actions.length + 1) {
       const prevState = history[history.length - 2];
       const last = incoming[incoming.length - 1];
       triggerFly(prevState, last);
@@ -856,6 +859,22 @@ export const useGame = create<Store>((set, get) => {
       if (s.online.clientId !== s.online.hostId) return;
       const { error } = await supabase.from("rooms").update({ status: "playing" }).eq("code", s.online.code);
       if (error) set({ message: `시작 오류: ${error.message}` });
+      else void pollRoom();
+    },
+
+    async rematch() {
+      const s = get();
+      if (!s.online || !s.online.code || !supabase || !s.online.config) return;
+      if (s.online.clientId !== s.online.hostId) return;
+      // same players & seats, new seed
+      const seed = (Math.floor(Math.random() * 1_000_000) + 1) | 0;
+      const config: GameConfig = { players: s.online.config.players, seed };
+      const { error } = await supabase
+        .from("rooms")
+        .update({ config, actions: [], status: "playing" })
+        .eq("code", s.online.code);
+      if (error) set({ message: `재시작 오류: ${error.message}` });
+      else void pollRoom();
     },
 
     leaveRoom() {
