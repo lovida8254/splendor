@@ -20,12 +20,21 @@ export interface ChatRow {
   created_at?: string;
 }
 
+export interface PresenceRow {
+  room: string;
+  client: string;
+  name: string;
+  seat: number | null;
+  last_seen: string;
+}
+
 export interface RoomRow {
   code: string;
   config: {
     players: { name: string; isAI: boolean; aiLevel?: string }[];
     seed: number;
     turnSeconds?: number | null;
+    aiTakeover?: boolean;
   };
   actions: unknown[];
   seats: Record<string, string>;

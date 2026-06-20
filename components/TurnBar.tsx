@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { Loader2, Flag, Plus, AlertTriangle, Undo2, Clapperboard, Gauge, Volume2, VolumeX, Wifi, LogOut, Timer } from "lucide-react";
+import { Loader2, Flag, Plus, AlertTriangle, Undo2, Clapperboard, Gauge, Volume2, VolumeX, Wifi, LogOut, Timer, Users, Eye } from "lucide-react";
 import { useGame, Speed } from "@/store/gameStore";
 import HowToPlay from "./HowToPlay";
 
@@ -67,6 +67,16 @@ export default function TurnBar() {
       {online && (
         <span className="flex items-center gap-1 rounded-md bg-gold/10 px-2 py-1 text-xs font-semibold text-gold">
           <Wifi size={12} /> {online.code}
+        </span>
+      )}
+      {online && (
+        <span className="flex items-center gap-1 rounded-md bg-black/30 px-2 py-1 text-xs text-ink-muted">
+          <Users size={12} /> {online.presence.length}
+        </span>
+      )}
+      {online && !Object.values(online.seats).includes(online.clientId) && (
+        <span className="flex items-center gap-1 rounded-md bg-black/30 px-2 py-1 text-xs text-ink-muted2">
+          <Eye size={12} /> 관전 중
         </span>
       )}
       <TurnCountdown />

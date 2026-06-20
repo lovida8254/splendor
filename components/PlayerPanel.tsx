@@ -47,7 +47,12 @@ function GemColumn({
 export function PlayerSummary({ player, index }: { player: Player; index: number }) {
   const game = useGame((s) => s.game)!;
   const aiThinking = useGame((s) => s.aiThinking);
+  const online = useGame((s) => s.online);
   const isCurrent = game.currentPlayerIndex === index && game.phase !== "finished";
+  // online connection dot (human seats only)
+  const controller = online?.seats[String(index)];
+  const showDot = !!online && !player.isAI;
+  const connected = !!controller && !!online?.presence.some((m) => m.client === controller);
   const thinking = isCurrent && player.isAI && aiThinking;
   const totalCards = GEM_COLORS.reduce((s, c) => s + player.bonuses[c], 0);
   const totalCoins = GEM_COLORS.reduce((s, c) => s + player.tokens[c], 0) + player.tokens.gold;
@@ -73,6 +78,12 @@ export function PlayerSummary({ player, index }: { player: Player; index: number
       {/* name pill + prestige */}
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="gold-pill flex items-center gap-1.5 rounded-full px-2.5 py-1">
+          {showDot && (
+            <span
+              className={clsx("h-2 w-2 rounded-full", connected ? "bg-green-400" : controller ? "bg-red-400" : "bg-line2")}
+              title={connected ? "접속 중" : controller ? "오프라인" : "빈 좌석"}
+            />
+          )}
           {player.isAI ? <Bot size={13} className="text-ink-muted" /> : <User size={13} className="text-gold" />}
           <span className="max-w-[96px] truncate text-[13px] font-semibold text-ink">{player.name}</span>
         </span>

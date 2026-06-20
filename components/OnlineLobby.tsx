@@ -30,6 +30,7 @@ function CreateForm() {
   const [count, setCount] = useState(2);
   const [slots, setSlots] = useState<Slot[]>(defaultSlots());
   const [turnSeconds, setTurnSeconds] = useState<number | null>(60);
+  const [aiTakeover, setAiTakeover] = useState(true);
   const upd = (i: number, p: Partial<Slot>) => setSlots((s) => s.map((x, idx) => (idx === i ? { ...x, ...p } : x)));
 
   function create() {
@@ -38,7 +39,7 @@ function CreateForm() {
       isAI: s.kind === "ai",
       aiLevel: s.kind === "ai" ? s.aiLevel : undefined,
     }));
-    createRoom(players, turnSeconds);
+    createRoom(players, turnSeconds, aiTakeover);
   }
 
   return (
@@ -105,7 +106,16 @@ function CreateForm() {
           ))}
         </div>
       </div>
-      <p className="text-[11px] text-ink-muted2">사람 자리는 방을 만든 뒤 각자 링크로 들어와 좌석을 선택합니다. 방장은 1번 사람 자리를 차지합니다.</p>
+      <button
+        onClick={() => setAiTakeover((v) => !v)}
+        className="menu-inset flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm"
+      >
+        <span className="text-ink">시간 초과 시 AI 대행</span>
+        <span className={clsx("rounded-full px-2 py-0.5 text-xs font-bold", aiTakeover ? "bg-gold/20 text-gold" : "bg-black/30 text-ink-muted2")}>
+          {aiTakeover ? "ON" : "OFF"}
+        </span>
+      </button>
+      <p className="text-[11px] text-ink-muted2">사람 자리는 방을 만든 뒤 각자 링크로 들어와 좌석을 선택합니다(좌석을 안 고르면 관전). 방장은 1번 사람 자리를 차지합니다.</p>
       <button onClick={create} className="btn-gold flex w-full items-center justify-center gap-2 rounded-xl py-3 font-display font-bold tracking-wide">
         <Plus size={16} /> 방 만들기
       </button>
@@ -175,10 +185,18 @@ function Room() {
           {players.map((p, i) => {
             const claimedBy = online.seats[String(i)];
             const mine = claimedBy === online.clientId;
+            const conn = !!claimedBy && online.presence.some((m) => m.client === claimedBy);
             return (
               <div key={i} className="menu-inset flex items-center gap-2 rounded-lg p-2.5">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-velvet text-xs font-bold text-gold">{i + 1}</span>
-                {p.isAI ? <Bot size={15} className="text-ink-muted" /> : <User size={15} className="text-gold" />}
+                {p.isAI ? (
+                  <Bot size={15} className="text-ink-muted" />
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <span className={clsx("h-2 w-2 rounded-full", conn ? "bg-green-400" : claimedBy ? "bg-red-400" : "bg-line2")} />
+                    <User size={15} className="text-gold" />
+                  </span>
+                )}
                 <span className="flex-1 truncate text-sm text-ink">{p.name}{p.isAI ? ` (AI·${AI_LABELS[(p.aiLevel as AILevel) ?? "normal"]})` : ""}</span>
                 {p.isAI ? (
                   <span className="text-[11px] text-ink-muted2">AI</span>
@@ -195,6 +213,14 @@ function Room() {
             );
           })}
         </div>
+        {(() => {
+          const specs = online.presence.filter((m) => m.seat == null);
+          return specs.length ? (
+            <p className="mt-2 text-[11px] text-ink-muted2">
+              관전 {specs.length}명: {specs.map((m) => m.name).join(", ")}
+            </p>
+          ) : null;
+        })()}
       </div>
 
       {isHost ? (
