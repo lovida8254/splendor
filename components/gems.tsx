@@ -227,33 +227,22 @@ export function CoinFace({ color, size = 30 }: { color: TokenColor; size?: numbe
   );
 }
 
-/** A development-card cost chip: gem/coin image (or colored circle) with the number. */
+/** A development-card cost chip: same-family color gradient circle with the number. */
 export function Pip({ color, n, size = "sm" }: { color: TokenColor; n: number; size?: "sm" | "md" }) {
   const m = GEM_META[color];
-  const imgSrc = gemImageSrc(color);
   const dim = size === "md" ? "h-9 w-9 text-base" : "h-8 w-8 text-sm";
   return (
     <span
       title={`${m.label} ${n}`}
-      className={clsx("relative grid place-items-center overflow-hidden rounded-full font-bold ring-1 ring-black/40", dim)}
-      style={
-        imgSrc
-          ? undefined
-          : {
-              background: `radial-gradient(circle at 35% 30%, ${m.light}, ${m.hex} 60%, ${m.dark})`,
-              color: m.textDark ? "#1a1626" : "#fff",
-              textShadow: m.textDark ? "none" : "0 1px 1px rgba(0,0,0,.5)",
-            }
-      }
+      className={clsx("relative grid place-items-center rounded-full font-bold ring-1 ring-black/50", dim)}
+      style={{
+        background: `radial-gradient(circle at 35% 28%, ${m.light}, ${m.hex} 58%, ${m.dark})`,
+        color: m.textDark ? "#1a1626" : "#fff",
+        textShadow: m.textDark ? "0 1px 1px rgba(255,255,255,.4)" : "0 1px 2px rgba(0,0,0,.7)",
+        boxShadow: "inset 0 1px 2px rgba(255,255,255,.45), inset 0 -2px 3px rgba(0,0,0,.4)",
+      }}
     >
-      {imgSrc && (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imgSrc} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
-          <span className="absolute inset-0 rounded-full bg-black/35" />
-        </>
-      )}
-      <span className={clsx("relative", imgSrc && "text-white [text-shadow:0_1px_2px_rgba(0,0,0,.9)]")}>{n}</span>
+      {n}
     </span>
   );
 }

@@ -12,6 +12,7 @@ export interface Flight {
   y1: number;
   delay: number;
   kind?: "coin" | "card";
+  hold?: number; // ms to hover at the source before flying
 }
 
 let seq = 0;

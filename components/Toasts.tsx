@@ -16,7 +16,7 @@ export default function Toasts() {
           <div
             key={t.id}
             className={clsx(
-              "gold-frame panel-glass flex max-w-[92vw] items-center gap-2.5 rounded-full px-4 py-2 shadow-velvet animate-fadein",
+              "gold-frame panel-glass flex max-w-[92vw] items-center gap-2.5 rounded-full px-4 py-2 shadow-velvet animate-toast",
               t.tone === "score" ? "border-gold" : "",
             )}
           >

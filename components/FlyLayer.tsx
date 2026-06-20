@@ -22,32 +22,51 @@ function CardChip({ color }: { color: Flight["color"] }) {
   );
 }
 
+const FLIGHT_MS = 620;
+
 function FlyToken({ f, onDone }: { f: Flight; onDone: () => void }) {
-  const [moved, setMoved] = useState(false);
+  // stage 0: appear at source · 1: hover (lifted) · 2: fly to target
+  const [stage, setStage] = useState(0);
+  const hold = f.hold ?? 700;
+
   useEffect(() => {
-    const id = requestAnimationFrame(() => requestAnimationFrame(() => setMoved(true)));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  // safety: remove even if transitionend doesn't fire
+    const r = requestAnimationFrame(() => requestAnimationFrame(() => setStage(1)));
+    const t = setTimeout(() => setStage(2), f.delay + hold);
+    return () => {
+      cancelAnimationFrame(r);
+      clearTimeout(t);
+    };
+  }, [f.delay, hold]);
+
+  // safety removal once the whole sequence is done
   useEffect(() => {
-    const t = setTimeout(onDone, 900 + f.delay);
+    const t = setTimeout(onDone, f.delay + hold + FLIGHT_MS + 150);
     return () => clearTimeout(t);
-  }, [f.delay, onDone]);
+  }, [f.delay, hold, onDone]);
 
   const dx = f.x1 - f.x0;
   const dy = f.y1 - f.y0;
+  const flying = stage === 2;
+
   return (
     <span
-      onTransitionEnd={onDone}
+      onTransitionEnd={(e) => {
+        if (flying && e.propertyName === "transform") onDone();
+      }}
       style={{
         position: "fixed",
         left: f.x0,
         top: f.y0,
-        transform: moved
+        transform: flying
           ? `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.6)`
-          : "translate(-50%, -50%) scale(1)",
-        opacity: moved ? 0.15 : 1,
-        transition: `transform 520ms cubic-bezier(.45,.05,.3,1) ${f.delay}ms, opacity 520ms ease-in ${f.delay}ms`,
+          : stage === 1
+            ? "translate(-50%, -50%) scale(1.18)" // hovering, slightly lifted
+            : "translate(-50%, -50%) scale(0.9)",
+        opacity: flying ? 0.15 : 1,
+        filter: stage === 1 ? "drop-shadow(0 0 8px rgba(216,178,94,.6))" : "none",
+        transition: flying
+          ? `transform ${FLIGHT_MS}ms cubic-bezier(.45,.05,.3,1), opacity ${FLIGHT_MS}ms ease-in`
+          : "transform 220ms ease-out, filter 220ms ease-out",
         willChange: "transform, opacity",
       }}
     >

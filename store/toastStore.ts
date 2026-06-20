@@ -12,7 +12,7 @@ export interface Toast {
 }
 
 let seq = 0;
-const TTL = 3200;
+const TTL = 4800; // matches the .animate-toast lifetime in globals.css
 
 interface ToastState {
   toasts: Toast[];

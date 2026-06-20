@@ -55,7 +55,17 @@ function spawn(moves: Move[]) {
     const a = centerOf(m.from);
     const b = centerOf(m.to);
     if (a && b) {
-      flights.push({ color: m.color, x0: a.x, y0: a.y, x1: b.x, y1: b.y, delay: i * 70, kind: m.kind ?? "coin" });
+      const kind = m.kind ?? "coin";
+      flights.push({
+        color: m.color,
+        x0: a.x,
+        y0: a.y,
+        x1: b.x,
+        y1: b.y,
+        delay: i * 70,
+        kind,
+        hold: kind === "card" ? 1500 : 900, // hover at source before flying
+      });
       i++;
     }
   }
