@@ -11,6 +11,15 @@ export const supabase = supabaseEnabled
   ? createClient(url!, key!, { db: { schema: "splendor" } })
   : null;
 
+export interface ChatRow {
+  id: number;
+  room: string;
+  client: string;
+  name: string;
+  text: string;
+  created_at?: string;
+}
+
 export interface RoomRow {
   code: string;
   config: { players: { name: string; isAI: boolean; aiLevel?: string }[]; seed: number };

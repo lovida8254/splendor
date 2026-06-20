@@ -8,7 +8,7 @@ import CardRow from "./CardRow";
 import TokenBank from "./TokenBank";
 import LogPanel from "./LogPanel";
 import { PlayerSummary } from "./PlayerPanel";
-import PlayerDock from "./PlayerDock";
+import DockDrawer from "./DockDrawer";
 import { DiscardModal, GameOverModal, NobleModal, PurchaseModal } from "./Modals";
 import ReplayBar from "./ReplayBar";
 import FlyLayer from "./FlyLayer";
@@ -55,8 +55,8 @@ export default function GameBoard() {
         ))}
       </div>
 
-      {/* bottom dock: current player's gems, owned cards, reserved, nobles */}
-      <PlayerDock />
+      {/* current player's holdings — hidden in a right slide-out drawer */}
+      <DockDrawer />
 
       {/* action log — at the very bottom */}
       <div className="mt-3">

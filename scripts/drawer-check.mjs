@@ -1,0 +1,12 @@
+import { chromium } from "playwright";
+const b = await chromium.launch();
+const p = await (await b.newContext({ viewport: { width: 1280, height: 850 } })).newPage();
+const errs=[]; p.on("pageerror",e=>errs.push(String(e)));
+await p.goto("http://localhost:3001/", { waitUntil: "domcontentloaded", timeout: 60000 });
+await p.getByRole("button", { name: /게임 시작/ }).click();
+await p.getByText("공급처").first().waitFor({ timeout: 15000 });
+await p.getByRole("button", { name: /내 보유/ }).click();
+await p.getByText("내 보석").first().waitFor({ timeout: 4000 });
+await p.screenshot({ path: "screenshots/drawer.png" });
+console.log("drawer ok, errors="+errs.length);
+await b.close();

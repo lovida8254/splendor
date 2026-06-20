@@ -5,7 +5,7 @@ import { aiAction } from "@/lib/ai/ai";
 import { triggerFly } from "@/lib/flyTrigger";
 import { runEffects } from "@/lib/effects";
 import { setSoundEnabled, unlockAudio } from "@/lib/sound";
-import { supabase, supabaseEnabled, RoomRow } from "@/lib/supabase";
+import { supabase, supabaseEnabled, RoomRow, ChatRow } from "@/lib/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   Action,
@@ -149,6 +149,10 @@ interface Store {
   leaveRoom: () => void;
   controlsCurrent: () => boolean;
   canActMain: () => boolean;
+
+  // chat
+  chat: { id: number; name: string; client: string; text: string }[];
+  sendChat: (text: string) => Promise<void>;
 }
 
 function rebuildHistory(config: GameConfig, actions: Action[]): GameState[] {
@@ -308,6 +312,34 @@ export const useGame = create<Store>((set, get) => {
     if (data) applyRoom(data as RoomRow);
   }
 
+  let lastMsgId = 0;
+  async function pollMessages() {
+    const s = get();
+    if (!s.online || !s.online.code || !supabase) return;
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("room", s.online.code)
+      .gt("id", lastMsgId)
+      .order("id")
+      .limit(100);
+    const rows = (data ?? []) as ChatRow[];
+    if (rows.length) {
+      lastMsgId = rows[rows.length - 1].id;
+      set((st) => ({
+        chat: [...st.chat, ...rows.map((r) => ({ id: r.id, name: r.name, client: r.client, text: r.text }))].slice(-200),
+      }));
+    }
+  }
+
+  function myDisplayName(s: Store): string {
+    const o = s.online;
+    if (!o || !o.config) return "관전자";
+    const seat = Object.keys(o.seats).find((k) => o.seats[k] === o.clientId);
+    if (seat != null) return o.config.players[Number(seat)]?.name ?? "플레이어";
+    return "관전자";
+  }
+
   function controlsCurrentImpl(s: Store): boolean {
     const g = s.game;
     if (!g || s.replayActive || g.phase === "finished") return false;
@@ -462,11 +494,23 @@ export const useGame = create<Store>((set, get) => {
           if (row && row.code) applyRoom(row);
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "splendor", table: "messages", filter: `room=eq.${code}` },
+        () => void pollMessages(),
+      )
       .subscribe();
+    // reset chat for the new room
+    lastMsgId = 0;
+    set({ chat: [] });
     // Polling fallback so sync works even if realtime is unavailable.
     if (roomPoll) clearInterval(roomPoll);
-    roomPoll = setInterval(() => void pollRoom(), 1200);
+    roomPoll = setInterval(() => {
+      void pollRoom();
+      void pollMessages();
+    }, 1200);
     void pollRoom();
+    void pollMessages();
   }
 
   return {
@@ -485,6 +529,7 @@ export const useGame = create<Store>((set, get) => {
     replayIndex: 0,
     replayPlaying: false,
     online: null,
+    chat: [],
 
     startGame(players) {
       clearTimers();
@@ -911,6 +956,7 @@ export const useGame = create<Store>((set, get) => {
         supabase.removeChannel(roomChannel);
         roomChannel = null;
       }
+      lastMsgId = 0;
       set({
         online: null,
         game: null,
@@ -919,7 +965,19 @@ export const useGame = create<Store>((set, get) => {
         selection: { tokens: {} },
         message: null,
         aiThinking: false,
+        chat: [],
       });
+    },
+
+    async sendChat(text) {
+      const s = get();
+      const body = text.trim().slice(0, 300);
+      if (!s.online || !s.online.code || !supabase || !body) return;
+      const { error } = await supabase
+        .from("messages")
+        .insert({ room: s.online.code, client: s.online.clientId, name: myDisplayName(s), text: body });
+      if (error) set({ message: `채팅 오류: ${error.message}` });
+      else void pollMessages();
     },
 
     controlsCurrent() {
