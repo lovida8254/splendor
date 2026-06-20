@@ -8,6 +8,7 @@ const config: Config = {
   theme: {
     extend: {
       screens: {
+        cm: "360px", // compact mobile and up (uniform fixed card height)
         xs: "400px", // small phones (≤399) vs. larger phones (≥400)
       },
       colors: {
