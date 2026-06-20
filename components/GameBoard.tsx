@@ -7,7 +7,8 @@ import NobleRow from "./NobleTile";
 import CardRow from "./CardRow";
 import TokenBank from "./TokenBank";
 import LogPanel from "./LogPanel";
-import { PlayerSummary, ReservedDock } from "./PlayerPanel";
+import { PlayerSummary } from "./PlayerPanel";
+import PlayerDock from "./PlayerDock";
 import { DiscardModal, GameOverModal, NobleModal, PurchaseModal } from "./Modals";
 import ReplayBar from "./ReplayBar";
 import FlyLayer from "./FlyLayer";
@@ -48,14 +49,11 @@ export default function GameBoard() {
       </div>
 
       <div className="fold-aware grid grid-cols-1 gap-3 md:grid-cols-[1fr_minmax(248px,288px)] md:gap-4">
-        {/* main column: card rows + reserved */}
-        <div className="space-y-3 md:space-y-4">
-          <div className="space-y-3">
-            {levelsTopDown.map((lvl) => (
-              <CardRow key={lvl} level={lvl} />
-            ))}
-          </div>
-          <ReservedDock />
+        {/* main column: card rows */}
+        <div className="space-y-3">
+          {levelsTopDown.map((lvl) => (
+            <CardRow key={lvl} level={lvl} />
+          ))}
         </div>
 
         {/* sidebar: log */}
@@ -63,6 +61,9 @@ export default function GameBoard() {
           <LogPanel />
         </div>
       </div>
+
+      {/* bottom dock: current player's gems, owned cards, reserved, nobles */}
+      <PlayerDock />
 
       {!replayActive && (
         <>
