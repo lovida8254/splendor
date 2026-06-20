@@ -5,7 +5,7 @@ import { ShoppingCart, BookmarkPlus } from "lucide-react";
 import { Card, CardSource, deficit, GameState, GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { GEM_META, GemJewel, Pip } from "./gems";
-import { PixelScene } from "./PixelScene";
+import { CardArt } from "./CardArt";
 
 function humanTurn(game: GameState): boolean {
   const cur = game.players[game.currentPlayerIndex];
@@ -75,7 +75,7 @@ export default function DevCard({
       {/* pixel-art scene illustration */}
       <div className="relative my-1 min-h-0 flex-1 overflow-hidden rounded-md ring-1 ring-black/25">
         <div className="absolute inset-0">
-          <PixelScene level={card.level} color={card.bonus} cardId={card.id} />
+          <CardArt card={card} />
         </div>
       </div>
 

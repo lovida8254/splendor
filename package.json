@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "assets": "node scripts/gen-assets.mjs",
+    "predev": "node scripts/gen-assets.mjs",
+    "prebuild": "node scripts/gen-assets.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

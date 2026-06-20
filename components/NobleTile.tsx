@@ -5,6 +5,8 @@ import { Crown } from "lucide-react";
 import { eligibleNobles, GEM_COLORS, Noble } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { Pip } from "./gems";
+import { NobleArt } from "./CardArt";
+import { NOBLE_IMAGE_FILES } from "@/lib/assets";
 
 function initial(noble: Noble): string {
   const n = (noble.name ?? noble.id).trim();
@@ -28,11 +30,11 @@ export function NobleTile({ noble, eligible, size = "md" }: { noble: Noble; elig
         <Crown size={14} className="text-gold/80" />
       </div>
       <div
-        className="mx-auto mb-1.5 grid h-9 w-9 place-items-center rounded-full font-display text-lg font-bold text-gold ring-1 ring-gold/40"
+        className="mx-auto mb-1.5 grid h-9 w-9 place-items-center overflow-hidden rounded-full font-display text-lg font-bold text-gold ring-1 ring-gold/40"
         style={{ background: "radial-gradient(circle at 35% 30%, #4a4070, #221b38)" }}
         title={noble.name ?? noble.id}
       >
-        {initial(noble)}
+        {NOBLE_IMAGE_FILES[noble.id] ? <NobleArt noble={noble} /> : initial(noble)}
       </div>
       <div className="flex flex-wrap justify-center gap-1">
         {GEM_COLORS.filter((c) => noble.requirement[c] > 0).map((c) => (
