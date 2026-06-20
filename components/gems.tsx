@@ -228,9 +228,9 @@ export function CoinFace({ color, size = 30 }: { color: TokenColor; size?: numbe
 }
 
 /** A development-card cost chip: same-family color gradient circle with the number. */
-export function Pip({ color, n, size = "sm" }: { color: TokenColor; n: number; size?: "sm" | "md" }) {
+export function Pip({ color, n, size = "sm" }: { color: TokenColor; n: number; size?: "xs" | "sm" | "md" }) {
   const m = GEM_META[color];
-  const dim = size === "md" ? "h-9 w-9 text-base" : "h-8 w-8 text-sm";
+  const dim = size === "md" ? "h-9 w-9 text-base" : size === "xs" ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm";
   return (
     <span
       title={`${m.label} ${n}`}

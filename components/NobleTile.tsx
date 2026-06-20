@@ -61,7 +61,7 @@ export function NobleTile({
       </div>
       <div className="relative z-10 flex flex-wrap justify-center gap-1">
         {GEM_COLORS.filter((c) => noble.requirement[c] > 0).map((c) => (
-          <Pip key={c} color={c} n={noble.requirement[c]} />
+          <Pip key={c} color={c} n={noble.requirement[c]} size="xs" />
         ))}
       </div>
     </div>

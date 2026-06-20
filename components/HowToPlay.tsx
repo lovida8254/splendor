@@ -3,6 +3,10 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { BookOpen, X, Crown, Coins, Layers, Gem, Trophy, Bookmark } from "lucide-react";
+import { TokenColor } from "@/lib/engine";
+import { GEM_META, GemImg } from "./gems";
+
+const GEM_ROW: TokenColor[] = ["white", "blue", "green", "red", "black", "gold"];
 
 function Section({
   icon: Icon,
@@ -14,7 +18,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="menu-inset rounded-xl p-3">
+    <section
+      className="rounded-xl border border-white/10 p-3"
+      style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.18))" }}
+    >
       <h3 className="mb-1.5 flex items-center gap-2 font-display text-sm font-bold text-gold">
         <Icon size={15} /> {title}
       </h3>
@@ -41,7 +48,11 @@ export default function HowToPlay({ className, label = "게임 방법" }: { clas
           onClick={() => setOpen(false)}
         >
           <div
-            className="menu-panel max-h-[88vh] w-full max-w-lg overflow-y-auto thin-scroll rounded-2xl p-5"
+            className="max-h-[88vh] w-full max-w-lg overflow-y-auto thin-scroll rounded-2xl border border-gold/50 p-5"
+            style={{
+              background: "linear-gradient(180deg, #30333c 0%, #1a1c21 100%)",
+              boxShadow: "0 0 22px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06), 0 24px 50px rgba(0,0,0,0.55)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -64,6 +75,16 @@ export default function HowToPlay({ className, label = "게임 방법" }: { clas
               </Section>
 
               <Section icon={Gem} title="토큰">
+                <div className="my-1 flex flex-wrap items-start gap-2.5">
+                  {GEM_ROW.map((c) => (
+                    <div key={c} className="flex w-[52px] flex-col items-center gap-1">
+                      <GemImg color={c} size={36} />
+                      <span className="text-center text-[10px] leading-tight text-ink-muted2">
+                        {GEM_META[c].label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
                 <p>5색 보석(다이아·사파이어·에메랄드·루비·오닉스)과 <b className="text-gold">골드(조커)</b>가 있습니다. 골드는 부족한 어떤 색이든 대체합니다.</p>
                 <p>턴 종료 시 토큰을 <b>10개</b>까지만 보유할 수 있어, 초과분은 반환합니다.</p>
               </Section>
