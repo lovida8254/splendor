@@ -234,15 +234,21 @@ export function Pip({ color, n, size = "sm" }: { color: TokenColor; n: number; s
   return (
     <span
       title={`${m.label} ${n}`}
-      className={clsx("relative grid place-items-center rounded-full font-bold ring-1 ring-black/50", dim)}
+      className={clsx("relative grid place-items-center rounded-full font-display font-bold", dim)}
       style={{
-        background: `radial-gradient(circle at 35% 28%, ${m.light}, ${m.hex} 58%, ${m.dark})`,
-        color: m.textDark ? "#1a1626" : "#fff",
-        textShadow: m.textDark ? "0 1px 1px rgba(255,255,255,.4)" : "0 1px 2px rgba(0,0,0,.7)",
-        boxShadow: "inset 0 1px 2px rgba(255,255,255,.45), inset 0 -2px 3px rgba(0,0,0,.4)",
+        // faceted gem: specular highlight over a deep multi-stop gradient
+        background: `radial-gradient(circle at 36% 24%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 32%), radial-gradient(circle at 50% 56%, ${m.light} 0%, ${m.hex} 40%, ${m.dark} 74%, #0e0a18 100%)`,
+        color: m.textDark ? "#241a08" : "#fff",
+        textShadow: m.textDark ? "0 1px 1px rgba(255,255,255,0.5)" : "0 1px 2px rgba(0,0,0,0.85)",
+        boxShadow: [
+          "inset 0 1.5px 2px rgba(255,255,255,0.55)", // top specular
+          "inset 0 -2.5px 5px rgba(0,0,0,0.55)", // inner depth
+          "0 0 0 1.5px rgba(212,175,55,0.55)", // gold rim
+          "0 2px 6px rgba(0,0,0,0.55)", // drop shadow
+        ].join(", "),
       }}
     >
-      {n}
+      <span className="relative">{n}</span>
     </span>
   );
 }
