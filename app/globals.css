@@ -31,10 +31,10 @@ body {
 
 body {
   background:
-    radial-gradient(1100px 520px at 50% -8%, rgba(120, 92, 200, 0.28) 0%, transparent 62%),
-    radial-gradient(900px 700px at 85% 110%, rgba(216, 178, 94, 0.08) 0%, transparent 55%),
-    radial-gradient(700px 600px at 10% 100%, rgba(58, 114, 223, 0.08) 0%, transparent 55%),
-    linear-gradient(180deg, #1a1530 0%, #161221 55%, #120e1d 100%);
+    radial-gradient(1100px 560px at 50% -6%, rgba(150, 120, 230, 0.38) 0%, transparent 64%),
+    radial-gradient(950px 720px at 85% 110%, rgba(216, 178, 94, 0.14) 0%, transparent 58%),
+    radial-gradient(760px 640px at 10% 100%, rgba(82, 140, 240, 0.16) 0%, transparent 58%),
+    linear-gradient(180deg, #2e2750 0%, #241d3d 50%, #1c1730 100%);
   background-attachment: fixed;
   color: #ece8f6;
   -webkit-font-smoothing: antialiased;
