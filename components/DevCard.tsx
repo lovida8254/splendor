@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { ShoppingCart, BookmarkPlus } from "lucide-react";
 import { Card, CardSource, deficit, GameState, GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
-import { GEM_META, GemJewel, Pip } from "./gems";
+import { GEM_META, GemImg, GemJewel, Pip } from "./gems";
 import { PixelScene } from "./PixelScene";
 import { cardImage, ImageBg } from "./CardArt";
 
@@ -83,11 +83,11 @@ export default function DevCard({
           {card.prestige > 0 ? card.prestige : ""}
         </span>
         <span
-          className="grid h-8 w-8 place-items-center rounded-full ring-1 ring-gold/40"
+          className="grid h-8 w-8 place-items-center overflow-hidden rounded-full ring-1 ring-gold/40"
           style={{ background: "rgba(0,0,0,.45)" }}
           title={`보너스: ${m.label}`}
         >
-          <GemJewel color={card.bonus} size={22} />
+          {GemImg({ color: card.bonus, size: 32, className: "h-full w-full" }) ?? <GemJewel color={card.bonus} size={22} />}
         </span>
       </div>
 

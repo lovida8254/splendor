@@ -24,3 +24,11 @@ export const CARD_BACK_BY_LEVEL: Record<string, string> = {
 };
 export const NOBLE_IMAGE_FILES: Record<string, string> = {};
 export const NOBLE_BG: string | null = "Noble_Tile_Background.webp";
+export const GEM_IMAGE_FILES: Record<string, string> = {
+  "white": "Gem_White_Diamond.webp",
+  "red": "Gem_Red_Ruby.webp",
+  "green": "Gem_Green_Emerald.webp",
+  "gold": "Gem_Gold_Coin.webp",
+  "black": "Gem_Black_Onyx.webp",
+  "blue": "Gem_Blue_Sapphire.webp"
+};

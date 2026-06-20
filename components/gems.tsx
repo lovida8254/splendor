@@ -1,5 +1,29 @@
 import clsx from "clsx";
 import { TokenColor } from "@/lib/engine";
+import { GEM_IMAGE_FILES } from "@/lib/assets";
+
+/** Source URL for a user-supplied gem/coin image, or null. */
+export function gemImageSrc(color: TokenColor): string | null {
+  const f = GEM_IMAGE_FILES[color];
+  return f ? `gem/${f}` : null;
+}
+
+/** A gem/coin image (round-masked) or null if none supplied. */
+export function GemImg({ color, size, className }: { color: TokenColor; size: number; className?: string }) {
+  const src = gemImageSrc(color);
+  if (!src) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return (
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      draggable={false}
+      className={clsx("rounded-full object-cover", className)}
+    />
+  );
+}
 
 export const GEM_META: Record<
   TokenColor,
@@ -90,6 +114,7 @@ export function GemToken({
   testId?: string;
 }) {
   const m = GEM_META[color];
+  const imgSrc = gemImageSrc(color);
   const px = size === "lg" ? 56 : size === "md" ? 44 : size === "sm" ? 34 : 26;
   const jewel = Math.round(px * 0.56);
   const interactive = !!onClick && !disabled;
@@ -127,16 +152,18 @@ export function GemToken({
       ))}
       {/* top coin */}
       <span
-        className="absolute left-0 top-0 grid place-items-center rounded-full"
+        className="absolute left-0 top-0 grid place-items-center overflow-hidden rounded-full"
         style={{
           width: px,
           height: px,
-          background: `radial-gradient(circle at 32% 28%, ${m.light}, ${m.hex} 55%, ${m.dark})`,
+          background: imgSrc
+            ? "#1a1626"
+            : `radial-gradient(circle at 32% 28%, ${m.light}, ${m.hex} 55%, ${m.dark})`,
           // Combine inset highlights with the selection/highlight ring in ONE
           // box-shadow (an inline `ring` would be overridden by this style).
           boxShadow: [
-            "inset 0 2px 4px rgba(255,255,255,.35)",
-            "inset 0 -3px 5px rgba(0,0,0,.35)",
+            imgSrc ? "inset 0 0 0 0 transparent" : "inset 0 2px 4px rgba(255,255,255,.35)",
+            imgSrc ? "inset 0 0 0 0 transparent" : "inset 0 -3px 5px rgba(0,0,0,.35)",
             selected
               ? "0 0 0 3px #d8b25e, 0 0 16px rgba(216,178,94,.7)"
               : highlight
@@ -145,7 +172,12 @@ export function GemToken({
           ].join(", "),
         }}
       >
-        <GemJewel color={color} size={jewel} />
+        {imgSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imgSrc} alt="" className="h-full w-full object-cover" draggable={false} />
+        ) : (
+          <GemJewel color={color} size={jewel} />
+        )}
       </span>
       {/* count pill */}
       {(showZero || count > 0) && (
@@ -166,6 +198,20 @@ export function GemToken({
 /** A bare coin face (no count/button) used by the fly-animation overlay. */
 export function CoinFace({ color, size = 30 }: { color: TokenColor; size?: number }) {
   const m = GEM_META[color];
+  const imgSrc = gemImageSrc(color);
+  if (imgSrc) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={imgSrc}
+        alt=""
+        width={size}
+        height={size}
+        draggable={false}
+        className="rounded-full object-cover shadow-[0_4px_10px_rgba(0,0,0,.4)]"
+      />
+    );
+  }
   return (
     <span
       className="grid place-items-center rounded-full ring-1 ring-black/40"
@@ -181,21 +227,33 @@ export function CoinFace({ color, size = 30 }: { color: TokenColor; size?: numbe
   );
 }
 
-/** A development-card cost chip: colored circle, white number, gem silhouette. */
+/** A development-card cost chip: gem/coin image (or colored circle) with the number. */
 export function Pip({ color, n, size = "sm" }: { color: TokenColor; n: number; size?: "sm" | "md" }) {
   const m = GEM_META[color];
+  const imgSrc = gemImageSrc(color);
   const dim = size === "md" ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
   return (
     <span
       title={`${m.label} ${n}`}
-      className={clsx("relative grid place-items-center rounded-full font-bold ring-1 ring-black/40", dim)}
-      style={{
-        background: `radial-gradient(circle at 35% 30%, ${m.light}, ${m.hex} 60%, ${m.dark})`,
-        color: m.textDark ? "#1a1626" : "#fff",
-        textShadow: m.textDark ? "none" : "0 1px 1px rgba(0,0,0,.5)",
-      }}
+      className={clsx("relative grid place-items-center overflow-hidden rounded-full font-bold ring-1 ring-black/40", dim)}
+      style={
+        imgSrc
+          ? undefined
+          : {
+              background: `radial-gradient(circle at 35% 30%, ${m.light}, ${m.hex} 60%, ${m.dark})`,
+              color: m.textDark ? "#1a1626" : "#fff",
+              textShadow: m.textDark ? "none" : "0 1px 1px rgba(0,0,0,.5)",
+            }
+      }
     >
-      {n}
+      {imgSrc && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imgSrc} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+          <span className="absolute inset-0 rounded-full bg-black/35" />
+        </>
+      )}
+      <span className={clsx("relative", imgSrc && "text-white [text-shadow:0_1px_2px_rgba(0,0,0,.9)]")}>{n}</span>
     </span>
   );
 }

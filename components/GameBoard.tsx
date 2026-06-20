@@ -49,7 +49,7 @@ export default function GameBoard() {
       </div>
 
       {/* card rows (full width) */}
-      <div className="space-y-3">
+      <div>
         {levelsTopDown.map((lvl) => (
           <CardRow key={lvl} level={lvl} />
         ))}

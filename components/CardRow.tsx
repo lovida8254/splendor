@@ -32,7 +32,7 @@ export default function CardRow({ level }: { level: CardLevel }) {
     deckReserveCheck.ok;
 
   return (
-    <div className="-mx-1 overflow-x-auto px-1 pb-1">
+    <div className="-mx-1 overflow-x-auto overflow-y-clip px-1 pb-2 pt-3">
       <div className="grid min-w-[440px] grid-cols-[58px_repeat(4,minmax(86px,1fr))] gap-2 sm:min-w-0 sm:gap-2.5">
         {/* deck back */}
         <button
