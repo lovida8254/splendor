@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bot, User, Play, RotateCcw, Crown } from "lucide-react";
+import { Bot, User, Play, RotateCcw, Crown, Wifi } from "lucide-react";
 import clsx from "clsx";
 import { AILevel, PlayerConfig } from "@/lib/engine";
-import { useGame } from "@/store/gameStore";
+import { useGame, onlineAvailable } from "@/store/gameStore";
 import HowToPlay from "./HowToPlay";
 
 type Slot = { name: string; kind: "human" | "ai"; aiLevel: AILevel };
@@ -24,6 +24,7 @@ export default function SetupScreen() {
   const startGame = useGame((s) => s.startGame);
   const resumeGame = useGame((s) => s.resumeGame);
   const hasSave = useGame((s) => s.hasSave);
+  const openOnline = useGame((s) => s.openOnline);
   const [count, setCount] = useState(2);
   const [slots, setSlots] = useState<Slot[]>(defaultSlots());
   const [canResume, setCanResume] = useState(false);
@@ -140,6 +141,15 @@ export default function SetupScreen() {
           <Play size={18} /> 게임 시작
         </button>
       </div>
+
+      {onlineAvailable && (
+        <button
+          onClick={openOnline}
+          className="menu-inset mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-gold transition hover:brightness-110"
+        >
+          <Wifi size={16} /> 온라인 멀티
+        </button>
+      )}
 
       <HowToPlay className="menu-inset mt-3 w-full rounded-xl py-3 font-semibold text-gold transition hover:brightness-110" />
 

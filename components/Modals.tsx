@@ -174,10 +174,11 @@ export function DiscardModal() {
   const game = useGame((s) => s.game)!;
   const discard = useGame((s) => s.discard);
   const autoDiscard = useGame((s) => s.autoDiscard);
+  const controls = useGame((s) => s.controlsCurrent());
   const [picked, setPicked] = useState<Partial<Record<TokenColor, number>>>({});
 
   const player = game.players[game.currentPlayerIndex];
-  if (!game.pendingDiscard || player.isAI) return null;
+  if (!game.pendingDiscard || !controls) return null;
 
   const excess = totalTokens(player) - 10;
   const pickedTotal = TOKEN_COLORS.reduce((s, c) => s + (picked[c] ?? 0), 0);
@@ -236,8 +237,8 @@ export function DiscardModal() {
 export function NobleModal() {
   const game = useGame((s) => s.game)!;
   const chooseNoble = useGame((s) => s.chooseNoble);
-  const player = game.players[game.currentPlayerIndex];
-  if (!game.pendingNoble || player.isAI) return null;
+  const controls = useGame((s) => s.controlsCurrent());
+  if (!game.pendingNoble || !controls) return null;
 
   const choices = game.nobles.filter((n) => game.pendingNoble!.includes(n.id));
   return (
@@ -264,9 +265,12 @@ export function NobleModal() {
 export function GameOverModal() {
   const game = useGame((s) => s.game)!;
   const abandon = useGame((s) => s.abandon);
+  const leaveRoom = useGame((s) => s.leaveRoom);
+  const online = useGame((s) => s.online);
   const enterReplay = useGame((s) => s.enterReplay);
   const replayActive = useGame((s) => s.replayActive);
   if (game.phase !== "finished" || replayActive) return null;
+  const exit = online ? leaveRoom : abandon;
 
   const ranked = standings(game);
   return (
@@ -293,8 +297,8 @@ export function GameOverModal() {
         <button onClick={() => enterReplay()} className="flex-1 rounded-xl border border-gold/50 bg-panel py-3 font-semibold text-gold transition hover:bg-panel-2">
           리플레이 보기
         </button>
-        <button onClick={() => abandon()} className="flex-1 rounded-xl bg-gradient-to-b from-[#e7cf86] to-[#cda14a] py-3 font-display font-bold tracking-wider text-[#2a200a] transition hover:brightness-105">
-          새 게임
+        <button onClick={() => exit()} className="flex-1 rounded-xl bg-gradient-to-b from-[#e7cf86] to-[#cda14a] py-3 font-display font-bold tracking-wider text-[#2a200a] transition hover:brightness-105">
+          {online ? "방 나가기" : "새 게임"}
         </button>
       </div>
     </Backdrop>

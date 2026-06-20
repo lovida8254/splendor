@@ -17,19 +17,12 @@ const LEVEL_TINT: Record<CardLevel, string> = {
 export default function CardRow({ level }: { level: CardLevel }) {
   const game = useGame((s) => s.game)!;
   const reserve = useGame((s) => s.reserve);
-  const replayActive = useGame((s) => s.replayActive);
+  const canAct = useGame((s) => s.canActMain());
   const slots = game.board[level];
   const deckCount = game.decks[level].length;
 
   const deckReserveCheck = validate(game, { type: "RESERVE", source: { from: "deck", level } });
-  const cur = game.players[game.currentPlayerIndex];
-  const canReserveDeck =
-    !cur.isAI &&
-    !game.pendingDiscard &&
-    !game.pendingNoble &&
-    game.phase !== "finished" &&
-    !replayActive &&
-    deckReserveCheck.ok;
+  const canReserveDeck = canAct && deckReserveCheck.ok;
 
   return (
     <div className="-mx-1 overflow-x-auto overflow-y-clip px-1 pb-2 pt-3">

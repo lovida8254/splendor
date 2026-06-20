@@ -5,6 +5,8 @@ import { aiAction } from "@/lib/ai/ai";
 import { triggerFly } from "@/lib/flyTrigger";
 import { runEffects } from "@/lib/effects";
 import { setSoundEnabled, unlockAudio } from "@/lib/sound";
+import { supabase, supabaseEnabled, RoomRow } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   Action,
   AILevel,
@@ -45,6 +47,36 @@ interface Selection {
 }
 
 const DUMMY_RNG: RNG = mulberry32(0); // reconstruction is deterministic (rng unused there)
+
+export interface OnlineState {
+  view: "menu" | "room";
+  code: string | null;
+  clientId: string;
+  hostId: string | null;
+  seats: Record<string, string>; // seatIndex -> clientId (human seats only)
+  status: "lobby" | "playing" | "finished";
+  config: GameConfig | null;
+  error: string | null;
+}
+
+export const onlineAvailable = supabaseEnabled;
+
+function getClientId(): string {
+  if (typeof window === "undefined") return "server";
+  let id = window.localStorage.getItem("splendor:client");
+  if (!id) {
+    id = "c_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    window.localStorage.setItem("splendor:client", id);
+  }
+  return id;
+}
+
+function genRoomCode(): string {
+  const ALPH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing chars
+  let s = "";
+  for (let i = 0; i < 5; i++) s += ALPH[Math.floor(Math.random() * ALPH.length)];
+  return s;
+}
 
 interface Store {
   config: GameConfig | null;
@@ -95,6 +127,18 @@ interface Store {
   setSpeed: (s: Speed) => void;
   setSound: (b: boolean) => void;
   setMessage: (m: string | null) => void;
+
+  // online multiplayer
+  online: OnlineState | null;
+  openOnline: () => void;
+  closeOnline: () => void;
+  createRoom: (players: PlayerConfig[]) => Promise<void>;
+  joinRoom: (code: string) => Promise<boolean>;
+  claimSeat: (seat: number) => Promise<void>;
+  startRoom: () => Promise<void>;
+  leaveRoom: () => void;
+  controlsCurrent: () => boolean;
+  canActMain: () => boolean;
 }
 
 function rebuildHistory(config: GameConfig, actions: Action[]): GameState[] {
@@ -175,6 +219,7 @@ export const useGame = create<Store>((set, get) => {
   function commit(action: Action) {
     const s = get();
     if (s.replayActive || !s.game) return;
+    if (s.online && s.online.status !== "lobby") return onlineCommit(action);
     const v = validate(s.game, action);
     if (!v.ok) {
       set({ message: v.reason ?? "잘못된 행동" });
@@ -198,6 +243,7 @@ export const useGame = create<Store>((set, get) => {
       aiTimer = null;
     }
     const s = get();
+    if (s.online) return; // online uses host-driven AI (maybeHostAI)
     if (s.replayActive || !s.game || s.game.phase === "finished") {
       set({ aiThinking: false });
       return;
@@ -241,6 +287,176 @@ export const useGame = create<Store>((set, get) => {
     return game.players[game.currentPlayerIndex].reserved.find((c) => c.id === source.cardId) ?? null;
   }
 
+  // ---- online multiplayer ----
+  let roomChannel: RealtimeChannel | null = null;
+  let roomPoll: ReturnType<typeof setInterval> | null = null;
+
+  async function pollRoom() {
+    const s = get();
+    if (!s.online || !s.online.code || !supabase) return;
+    const { data } = await supabase.from("rooms").select("*").eq("code", s.online.code).maybeSingle();
+    if (data) applyRoom(data as RoomRow);
+  }
+
+  function controlsCurrentImpl(s: Store): boolean {
+    const g = s.game;
+    if (!g || s.replayActive || g.phase === "finished") return false;
+    if (!s.online) return !g.players[g.currentPlayerIndex].isAI; // local hotseat
+    return s.online.seats[String(g.currentPlayerIndex)] === s.online.clientId;
+  }
+
+  /** Apply an action optimistically and push the new action log to the room. */
+  function onlineApplyAndPush(action: Action) {
+    const s = get();
+    if (!s.online || !s.game || !supabase) return;
+    const next = applyAction(s.game, action, s.rng);
+    const actions = [...s.actions, action];
+    const history = [...s.history, next];
+    triggerFly(s.game, action);
+    set({ game: next, actions, history, selection: { tokens: {} }, message: null });
+    runEffects(s.game, next, action);
+    const status = next.phase === "finished" ? "finished" : "playing";
+    supabase
+      .from("rooms")
+      .update({ actions, status })
+      .eq("code", s.online.code)
+      .then(({ error }) => {
+        if (error) set({ message: `동기화 오류: ${error.message}` });
+      });
+    maybeHostAI();
+  }
+
+  function onlineCommit(action: Action) {
+    const s = get();
+    if (!s.game || !s.online) return;
+    if (!controlsCurrentImpl(s)) {
+      set({ message: "당신 차례가 아닙니다" });
+      return;
+    }
+    const v = validate(s.game, action);
+    if (!v.ok) {
+      set({ message: v.reason ?? "잘못된 행동" });
+      return;
+    }
+    onlineApplyAndPush(action);
+  }
+
+  /** Host drives AI seats: append the AI action when it's an AI player's turn. */
+  function maybeHostAI() {
+    if (aiTimer) {
+      clearTimeout(aiTimer);
+      aiTimer = null;
+    }
+    const s = get();
+    if (!s.online || s.online.status !== "playing" || !s.game || s.game.phase === "finished") {
+      set({ aiThinking: false });
+      return;
+    }
+    const cur = s.game.players[s.game.currentPlayerIndex];
+    if (!cur.isAI || s.online.clientId !== s.online.hostId) {
+      set({ aiThinking: false });
+      return;
+    }
+    set({ aiThinking: true });
+    aiTimer = setTimeout(() => {
+      const st = get();
+      if (!st.online || st.online.status !== "playing" || !st.game) return;
+      const g = st.game;
+      if (!g.players[g.currentPlayerIndex].isAI || st.online.clientId !== st.online.hostId) {
+        set({ aiThinking: false });
+        return;
+      }
+      try {
+        onlineApplyAndPush(aiAction(g, st.rng));
+      } catch (e) {
+        set({ aiThinking: false, message: `AI 오류: ${(e as Error).message}` });
+      }
+    }, SPEED_MS[get().speed] + 200);
+  }
+
+  /** Reconcile local state with an incoming room row (realtime or fetch). */
+  function applyRoom(row: RoomRow) {
+    const s = get();
+    if (!s.online || s.online.code !== row.code) return;
+    const config: GameConfig = { players: row.config.players as PlayerConfig[], seed: row.config.seed };
+    const incoming = (row.actions ?? []) as Action[];
+
+    // Still in the lobby: just track metadata; no game to build yet.
+    if (row.status === "lobby") {
+      set({
+        game: null,
+        online: { ...s.online, seats: row.seats ?? {}, hostId: row.host, status: "lobby", config },
+      });
+      return;
+    }
+
+    // Playing/finished but we're already at/ahead of this revision (e.g. our own
+    // optimistic echo) and the game is built — only refresh metadata.
+    if (s.game && incoming.length <= s.actions.length) {
+      set({
+        online: {
+          ...s.online,
+          seats: row.seats ?? {},
+          hostId: row.host,
+          status: s.game.phase === "finished" ? "finished" : "playing",
+          config,
+        },
+      });
+      maybeHostAI();
+      return;
+    }
+    let history: GameState[];
+    try {
+      history = rebuildHistory(config, incoming);
+    } catch {
+      return;
+    }
+    const game = history[history.length - 1];
+    // animate/sound the newest action (covers opponents' moves)
+    if (history.length >= 2) {
+      const prevState = history[history.length - 2];
+      const last = incoming[incoming.length - 1];
+      triggerFly(prevState, last);
+      runEffects(prevState, game, last);
+    }
+    set({
+      game,
+      actions: incoming,
+      history,
+      online: {
+        ...s.online,
+        seats: row.seats ?? {},
+        hostId: row.host,
+        status: game.phase === "finished" ? "finished" : "playing",
+        config,
+      },
+    });
+    maybeHostAI();
+  }
+
+  function subscribeRoom(code: string) {
+    if (!supabase) return;
+    if (roomChannel) {
+      supabase.removeChannel(roomChannel);
+      roomChannel = null;
+    }
+    roomChannel = supabase
+      .channel(`room:${code}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "splendor", table: "rooms", filter: `code=eq.${code}` },
+        (payload) => {
+          const row = payload.new as RoomRow;
+          if (row && row.code) applyRoom(row);
+        },
+      )
+      .subscribe();
+    // Polling fallback so sync works even if realtime is unavailable.
+    if (roomPoll) clearInterval(roomPoll);
+    roomPoll = setInterval(() => void pollRoom(), 1200);
+    void pollRoom();
+  }
+
   return {
     config: null,
     actions: [],
@@ -256,6 +472,7 @@ export const useGame = create<Store>((set, get) => {
     replayActive: false,
     replayIndex: 0,
     replayPlaying: false,
+    online: null,
 
     startGame(players) {
       clearTimers();
@@ -527,6 +744,150 @@ export const useGame = create<Store>((set, get) => {
 
     setMessage(m) {
       set({ message: m });
+    },
+
+    // ---- online multiplayer ----
+    openOnline() {
+      clearTimers();
+      set({
+        game: null,
+        actions: [],
+        history: [],
+        online: {
+          view: "menu",
+          code: null,
+          clientId: getClientId(),
+          hostId: null,
+          seats: {},
+          status: "lobby",
+          config: null,
+          error: supabaseEnabled ? null : "온라인 기능이 설정되지 않았습니다.",
+        },
+      });
+    },
+
+    closeOnline() {
+      get().leaveRoom();
+    },
+
+    async createRoom(players) {
+      if (!supabase) {
+        set((s) => ({ online: s.online ? { ...s.online, error: "온라인 미설정" } : s.online }));
+        return;
+      }
+      clearTimers();
+      const clientId = getClientId();
+      const seed = (Math.floor(Math.random() * 1_000_000) + 1) | 0;
+      const config: GameConfig = { players, seed };
+      const firstHuman = players.findIndex((p) => !p.isAI);
+      const seats: Record<string, string> = firstHuman >= 0 ? { [String(firstHuman)]: clientId } : {};
+      let code = genRoomCode();
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { error } = await supabase
+          .from("rooms")
+          .insert({ code, config, actions: [], seats, status: "lobby", host: clientId });
+        if (!error) break;
+        if (attempt === 4) {
+          set((s) => ({ online: s.online ? { ...s.online, error: `방 생성 실패: ${error.message}` } : s.online }));
+          return;
+        }
+        code = genRoomCode();
+      }
+      set({
+        online: { view: "room", code, clientId, hostId: clientId, seats, status: "lobby", config, error: null },
+      });
+      subscribeRoom(code);
+    },
+
+    async joinRoom(code) {
+      if (!supabase) return false;
+      code = code.trim().toUpperCase();
+      if (!code) return false;
+      clearTimers();
+      const clientId = getClientId();
+      const { data, error } = await supabase.from("rooms").select("*").eq("code", code).maybeSingle();
+      if (error || !data) {
+        set((s) => ({
+          online: s.online
+            ? { ...s.online, error: "방을 찾을 수 없습니다." }
+            : { view: "menu", code: null, clientId, hostId: null, seats: {}, status: "lobby", config: null, error: "방을 찾을 수 없습니다." },
+        }));
+        return false;
+      }
+      const row = data as RoomRow;
+      const config: GameConfig = { players: row.config.players as PlayerConfig[], seed: row.config.seed };
+      set({
+        online: {
+          view: "room",
+          code,
+          clientId,
+          hostId: row.host,
+          seats: row.seats ?? {},
+          status: row.status === "lobby" ? "lobby" : "playing",
+          config,
+          error: null,
+        },
+      });
+      subscribeRoom(code);
+      applyRoom(row);
+      return true;
+    },
+
+    async claimSeat(seat) {
+      const s = get();
+      if (!s.online || !s.online.code || !supabase || !s.online.config) return;
+      if (s.online.config.players[seat]?.isAI) return; // AI seats aren't claimable
+      const seats = { ...s.online.seats };
+      for (const k of Object.keys(seats)) if (seats[k] === s.online.clientId) delete seats[k];
+      if (seats[String(seat)] && seats[String(seat)] !== s.online.clientId) {
+        set({ message: "이미 점유된 좌석입니다" });
+        return;
+      }
+      seats[String(seat)] = s.online.clientId;
+      set((st) => ({ online: st.online ? { ...st.online, seats } : st.online }));
+      const { error } = await supabase.from("rooms").update({ seats }).eq("code", s.online.code);
+      if (error) set({ message: `좌석 오류: ${error.message}` });
+    },
+
+
+    async startRoom() {
+      const s = get();
+      if (!s.online || !s.online.code || !supabase) return;
+      if (s.online.clientId !== s.online.hostId) return;
+      const { error } = await supabase.from("rooms").update({ status: "playing" }).eq("code", s.online.code);
+      if (error) set({ message: `시작 오류: ${error.message}` });
+    },
+
+    leaveRoom() {
+      clearTimers();
+      if (roomPoll) {
+        clearInterval(roomPoll);
+        roomPoll = null;
+      }
+      if (roomChannel && supabase) {
+        supabase.removeChannel(roomChannel);
+        roomChannel = null;
+      }
+      set({
+        online: null,
+        game: null,
+        actions: [],
+        history: [],
+        selection: { tokens: {} },
+        message: null,
+        aiThinking: false,
+      });
+    },
+
+    controlsCurrent() {
+      return controlsCurrentImpl(get());
+    },
+
+    canActMain() {
+      const s = get();
+      if (!s.game || s.replayActive || s.game.pendingDiscard || s.game.pendingNoble) return false;
+      if (s.game.phase === "finished") return false;
+      return controlsCurrentImpl(s);
     },
   };
 });

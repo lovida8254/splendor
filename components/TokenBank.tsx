@@ -12,11 +12,7 @@ export default function TokenBank() {
   const toggleToken = useGame((s) => s.toggleToken);
   const clearSelection = useGame((s) => s.clearSelection);
   const confirmTake = useGame((s) => s.confirmTake);
-  const replayActive = useGame((s) => s.replayActive);
-
-  const cur = game.players[game.currentPlayerIndex];
-  const interactive =
-    !cur.isAI && !game.pendingDiscard && !game.pendingNoble && game.phase !== "finished" && !replayActive;
+  const interactive = useGame((s) => s.canActMain());
 
   const sel = selection.tokens;
   const selectedTotal = GEM_COLORS.reduce((s, c) => s + (sel[c] ?? 0), 0);

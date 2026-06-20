@@ -1,0 +1,22 @@
+import { createClient } from "@supabase/supabase-js";
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+/** True when Supabase env vars are configured (online multiplayer available). */
+export const supabaseEnabled = !!(url && key);
+
+// Target the isolated `splendor` schema (separate from other projects).
+export const supabase = supabaseEnabled
+  ? createClient(url!, key!, { db: { schema: "splendor" } })
+  : null;
+
+export interface RoomRow {
+  code: string;
+  config: { players: { name: string; isAI: boolean; aiLevel?: string }[]; seed: number };
+  actions: unknown[];
+  seats: Record<string, string>;
+  status: "lobby" | "playing" | "finished";
+  host: string;
+  updated_at?: string;
+}

@@ -3,16 +3,11 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { ShoppingCart, BookmarkPlus } from "lucide-react";
-import { Card, CardSource, deficit, GameState, GEM_COLORS, validate } from "@/lib/engine";
+import { Card, CardSource, deficit, GEM_COLORS, validate } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import { GEM_META, GemImg, GemJewel, Pip } from "./gems";
 import { PixelScene } from "./PixelScene";
 import { cardImage, ImageBg } from "./CardArt";
-
-function humanTurn(game: GameState): boolean {
-  const cur = game.players[game.currentPlayerIndex];
-  return !cur.isAI && !game.pendingDiscard && !game.pendingNoble && game.phase !== "finished";
-}
 
 export default function DevCard({
   card,
@@ -28,7 +23,7 @@ export default function DevCard({
   const game = useGame((s) => s.game)!;
   const openPurchase = useGame((s) => s.openPurchase);
   const reserve = useGame((s) => s.reserve);
-  const replayActive = useGame((s) => s.replayActive);
+  const canPlay = useGame((s) => s.canActMain());
 
   const me = game.players[game.currentPlayerIndex];
   const m = GEM_META[card.bonus];
@@ -37,8 +32,6 @@ export default function DevCard({
   const reserveCheck = reserveSource
     ? validate(game, { type: "RESERVE", source: reserveSource })
     : { ok: false, reason: "" };
-
-  const canPlay = humanTurn(game) && !replayActive;
   const affordable = canPlay && buyCheck.ok;
   const d = deficit(me, card);
   const cardAnchor =
