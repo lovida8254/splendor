@@ -25,8 +25,8 @@ export default function CardRow({ level }: { level: CardLevel }) {
   const canReserveDeck = canAct && deckReserveCheck.ok;
 
   return (
-    <div className="-mx-1 overflow-x-auto overflow-y-clip px-1 pb-2 pt-3">
-      <div className="grid min-w-[440px] grid-cols-[58px_repeat(4,minmax(86px,1fr))] gap-2 sm:min-w-0 sm:gap-2.5">
+    <div className="-mx-1 overflow-x-clip overflow-y-clip px-1 pb-2 pt-3">
+      <div className="grid min-w-0 grid-cols-[40px_repeat(4,minmax(0,1fr))] gap-1.5 sm:grid-cols-[58px_repeat(4,minmax(86px,1fr))] sm:gap-2.5">
         {/* deck back */}
         <button
           data-fly-card={`deck-${level}`}
@@ -34,7 +34,7 @@ export default function CardRow({ level }: { level: CardLevel }) {
           onClick={() => reserve({ from: "deck", level })}
           title={deckReserveCheck.ok ? "맨 위 카드 블라인드 예약 (골드 획득)" : deckReserveCheck.reason || `레벨 ${level} 덱`}
           className={clsx(
-            "relative flex h-[164px] flex-col items-center justify-center overflow-hidden rounded-xl border text-center shadow-velvet transition duration-150",
+            "relative flex h-[150px] flex-col items-center justify-center overflow-hidden rounded-xl border text-center shadow-velvet transition duration-150 sm:h-[164px]",
             canReserveDeck
               ? "border-gold/60 hover:-translate-y-1.5 hover:scale-[1.05] hover:shadow-[0_22px_44px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.5)] hover:brightness-110"
               : "border-line2",
@@ -78,7 +78,7 @@ export default function CardRow({ level }: { level: CardLevel }) {
           ) : (
             <div
               key={`empty-${slot}`}
-              className="grid h-[164px] place-items-center rounded-xl border border-dashed border-line/50 bg-velvet/30 text-xs text-ink-muted2"
+              className="grid h-[150px] place-items-center rounded-xl border border-dashed border-line/50 bg-velvet/30 text-xs text-ink-muted2 sm:h-[164px]"
             >
               —
             </div>

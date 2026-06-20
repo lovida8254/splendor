@@ -45,7 +45,7 @@ export default function DevCard({
     <div
       data-fly-card={cardAnchor}
       className={clsx(
-        "card-sheen relative flex h-[164px] flex-col overflow-hidden rounded-xl border p-2 shadow-velvet animate-pop",
+        "card-sheen relative flex h-[150px] flex-col overflow-hidden rounded-xl border p-1.5 shadow-velvet animate-pop sm:h-[164px] sm:p-2",
         "transition duration-150 hover:-translate-y-1.5 hover:scale-[1.05] hover:shadow-[0_22px_44px_rgba(0,0,0,.6),0_8px_16px_rgba(0,0,0,.5)] hover:z-20",
         affordable ? "border-gold/70 animate-affordable" : "border-line2",
       )}
@@ -69,14 +69,14 @@ export default function DevCard({
       <div className="relative z-10 flex shrink-0 items-start justify-between">
         <span
           className={clsx(
-            "grid h-9 w-9 place-items-center rounded-full font-display text-2xl font-bold leading-none",
+            "grid h-7 w-7 place-items-center rounded-full font-display text-xl font-bold leading-none sm:h-9 sm:w-9 sm:text-2xl",
             card.prestige > 0 ? "gold-pill text-gold" : "text-transparent",
           )}
         >
           {card.prestige > 0 ? card.prestige : ""}
         </span>
         <span
-          className="grid h-8 w-8 place-items-center overflow-hidden rounded-full ring-1 ring-gold/40"
+          className="grid h-7 w-7 place-items-center overflow-hidden rounded-full ring-1 ring-gold/40 sm:h-8 sm:w-8"
           style={{ background: "rgba(0,0,0,.45)" }}
           title={`보너스: ${m.label}`}
         >
@@ -89,7 +89,7 @@ export default function DevCard({
       {/* cost */}
       <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-1">
         {GEM_COLORS.filter((c) => card.cost[c] > 0).map((c) => (
-          <Pip key={c} color={c} n={card.cost[c]} />
+          <Pip key={c} color={c} n={card.cost[c]} size="cost" />
         ))}
         {GEM_COLORS.every((c) => card.cost[c] === 0) && (
           <span className="rounded bg-black/50 px-1 text-[11px] text-ink-muted2">무료</span>
@@ -103,7 +103,7 @@ export default function DevCard({
 
       {/* actions */}
       {canPlay && (
-        <div className="relative z-10 mt-1.5 flex shrink-0 gap-1.5">
+        <div className="relative z-10 mt-1.5 flex shrink-0 flex-col gap-1 xs:flex-row xs:gap-1.5">
           <button
             disabled={!affordable}
             onClick={() => openPurchase(buySource)}

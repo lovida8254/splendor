@@ -7,6 +7,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: "400px", // small phones (≤399) vs. larger phones (≥400)
+      },
       colors: {
         velvet: { DEFAULT: "#161221", 2: "#1d1830" },
         panel: { DEFAULT: "#241d39", 2: "#2c2447" },

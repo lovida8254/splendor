@@ -10,6 +10,10 @@ mkdirSync(OUT, { recursive: true });
 const VIEWPORTS = [
   { name: "fold-cover-280", width: 280, height: 653 }, // worst-case narrow cover
   { name: "fold-cover-344", width: 344, height: 882 }, // Z Fold cover (CSS)
+  { name: "phone-360", width: 360, height: 800 }, // common Android (Galaxy S/A)
+  { name: "phone-390", width: 390, height: 844 }, // iPhone 12/13/14
+  { name: "phone-412", width: 412, height: 915 }, // Pixel / large Android
+  { name: "phone-430", width: 430, height: 932 }, // iPhone Pro Max
   { name: "fold-open-768", width: 768, height: 1024 }, // unfolded inner (compact)
   { name: "fold-open-884", width: 884, height: 1104 }, // unfolded inner (Z Fold5)
   { name: "desktop-1280", width: 1280, height: 800 },
