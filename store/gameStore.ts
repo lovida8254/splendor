@@ -318,38 +318,88 @@ export const useGame = create<Store>((set, get) => {
   let turnTimer: ReturnType<typeof setInterval> | null = null;
   let takeoverForLen = -1; // actions.length we already triggered a timeout takeover for
 
-  /** Which client should drive automation (AI move / timeout) for the current human turn. */
-  function timeoutDriver(seats: Record<string, string>, host: string | null, idx: number): string | null {
-    const controller = seats[String(idx)];
-    if (host && host !== controller) return host; // host drives others' timeouts
-    // host is the AFK player: hand off to the lowest other claimed human seat
-    const others = Object.keys(seats)
+  /** The single connected client responsible for automation (AI seats, takeover, host handoff). */
+  function effectiveDriverId(o: OnlineState, connected: Set<string>): string | null {
+    if (o.hostId && connected.has(o.hostId)) return o.hostId; // host drives while connected
+    // host offline -> lowest-seat connected human controller takes over
+    const seatNums = Object.keys(o.seats)
       .map(Number)
-      .filter((k) => k !== idx)
       .sort((a, b) => a - b);
-    return others.length ? seats[String(others[0])] : null;
+    for (const k of seatNums) {
+      const c = o.seats[String(k)];
+      if (connected.has(c)) return c;
+    }
+    return null;
   }
 
-  /** If the current human player has run out of time, the designated driver plays an AI move. */
-  function checkTurnTimeout() {
+  /** Schedule an AI move for the current seat (driver only), once per state revision. */
+  function scheduleAIMove(delay: number) {
+    const s = get();
+    takeoverForLen = s.actions.length;
+    set({ aiThinking: true });
+    if (aiTimer) clearTimeout(aiTimer);
+    aiTimer = setTimeout(() => {
+      const st = get();
+      if (!st.online || st.online.status !== "playing" || !st.game || st.game.phase === "finished") {
+        set({ aiThinking: false });
+        return;
+      }
+      const connected = new Set(st.online.presence.map((m) => m.client));
+      if (effectiveDriverId(st.online, connected) !== st.online.clientId) {
+        set({ aiThinking: false });
+        return;
+      }
+      try {
+        onlineApplyAndPush(aiAction(st.game, st.rng));
+      } catch (e) {
+        set({ aiThinking: false, message: `AI 오류: ${(e as Error).message}` });
+      }
+    }, delay);
+  }
+
+  /** Drive online automation: AI seats, offline-seat takeover, AFK timeout, host handoff. */
+  function driveAutomation() {
     const s = get();
     const o = s.online;
-    if (!o || o.status !== "playing" || !s.game || s.game.phase === "finished") return;
-    const cfg = o.config;
-    const secs = cfg?.turnSeconds;
-    if (!cfg || cfg.aiTakeover === false || !secs || !o.turnStartedAt) return;
-    const idx = s.game.currentPlayerIndex;
-    if (cfg.players[idx]?.isAI) return; // AI seats handled by maybeHostAI
-    if ((Date.now() - o.turnStartedAt) / 1000 < secs) return; // still has time
-    if (timeoutDriver(o.seats, o.hostId, idx) !== o.clientId) return; // not my job
-    if (takeoverForLen === s.actions.length) return; // already handled this turn
-    takeoverForLen = s.actions.length;
-    pushToast({ tone: "ai", title: cfg.players[idx].name, sub: "시간 초과 — AI가 대신 진행합니다" });
-    try {
-      onlineApplyAndPush(aiAction(s.game, s.rng));
-    } catch {
-      /* ignore */
+    if (!o || o.status !== "playing" || !s.game || s.game.phase === "finished") {
+      set({ aiThinking: false });
+      return;
     }
+    const connected = new Set(o.presence.map((m) => m.client));
+    if (effectiveDriverId(o, connected) !== o.clientId) {
+      set({ aiThinking: false });
+      return;
+    }
+    // host auto-handoff: if the recorded host is offline, claim it
+    if (o.hostId !== o.clientId && (!o.hostId || !connected.has(o.hostId)) && supabase && o.code) {
+      supabase
+        .from("rooms")
+        .update({ host: o.clientId })
+        .eq("code", o.code)
+        .then(() => void pollRoom());
+    }
+    if (takeoverForLen === s.actions.length) return; // already acting on this state
+    const idx = s.game.currentPlayerIndex;
+    const cur = s.game.players[idx];
+    const cfg = o.config;
+    if (cur.isAI) {
+      scheduleAIMove(SPEED_MS[s.speed] + 200);
+      return;
+    }
+    // human seat
+    const controller = o.seats[String(idx)];
+    const seatOnline = !!controller && connected.has(controller);
+    if (!seatOnline) {
+      if (cfg?.aiTakeover === false) return; // host chose to wait for AFK players
+      pushToast({ tone: "ai", title: cur.name, sub: "연결 끊김 — AI가 대신 진행합니다" });
+      scheduleAIMove(SPEED_MS[s.speed] + 200);
+      return;
+    }
+    // connected but possibly idle: enforce the turn timeout
+    if (!cfg || cfg.aiTakeover === false || !cfg.turnSeconds || !o.turnStartedAt) return;
+    if ((Date.now() - o.turnStartedAt) / 1000 < cfg.turnSeconds) return;
+    pushToast({ tone: "ai", title: cur.name, sub: "시간 초과 — AI가 대신 진행합니다" });
+    scheduleAIMove(0);
   }
 
   async function pollRoom() {
@@ -387,7 +437,7 @@ export const useGame = create<Store>((set, get) => {
     const rows = (data ?? []) as PresenceRow[];
     const now = Date.now();
     const members = rows
-      .filter((r) => now - Date.parse(r.last_seen) < 12000)
+      .filter((r) => now - Date.parse(r.last_seen) < 8000) // ~2 missed heartbeats = offline
       .map((r) => ({ client: r.client, name: r.name, seat: r.seat }));
     set((st) => (st.online ? { online: { ...st.online, presence: members } } : {}));
   }
@@ -453,7 +503,7 @@ export const useGame = create<Store>((set, get) => {
       .then(({ error }) => {
         if (error) set({ message: `동기화 오류: ${error.message}` });
       });
-    maybeHostAI();
+    driveAutomation();
   }
 
   function onlineCommit(action: Action) {
@@ -469,39 +519,6 @@ export const useGame = create<Store>((set, get) => {
       return;
     }
     onlineApplyAndPush(action);
-  }
-
-  /** Host drives AI seats: append the AI action when it's an AI player's turn. */
-  function maybeHostAI() {
-    if (aiTimer) {
-      clearTimeout(aiTimer);
-      aiTimer = null;
-    }
-    const s = get();
-    if (!s.online || s.online.status !== "playing" || !s.game || s.game.phase === "finished") {
-      set({ aiThinking: false });
-      return;
-    }
-    const cur = s.game.players[s.game.currentPlayerIndex];
-    if (!cur.isAI || s.online.clientId !== s.online.hostId) {
-      set({ aiThinking: false });
-      return;
-    }
-    set({ aiThinking: true });
-    aiTimer = setTimeout(() => {
-      const st = get();
-      if (!st.online || st.online.status !== "playing" || !st.game) return;
-      const g = st.game;
-      if (!g.players[g.currentPlayerIndex].isAI || st.online.clientId !== st.online.hostId) {
-        set({ aiThinking: false });
-        return;
-      }
-      try {
-        onlineApplyAndPush(aiAction(g, st.rng));
-      } catch (e) {
-        set({ aiThinking: false, message: `AI 오류: ${(e as Error).message}` });
-      }
-    }, SPEED_MS[get().speed] + 200);
   }
 
   /** Reconcile local state with an incoming room row (realtime or fetch). */
@@ -538,7 +555,7 @@ export const useGame = create<Store>((set, get) => {
           config,
         },
       });
-      maybeHostAI();
+      driveAutomation();
       return;
     }
     let history: GameState[];
@@ -569,7 +586,7 @@ export const useGame = create<Store>((set, get) => {
       },
     });
     takeoverForLen = -1;
-    maybeHostAI();
+    driveAutomation();
   }
 
   function subscribeRoom(code: string) {
@@ -609,11 +626,11 @@ export const useGame = create<Store>((set, get) => {
     void pollPresence();
     // Presence heartbeat (5s) — declares this client online.
     if (presenceTimer) clearInterval(presenceTimer);
-    presenceTimer = setInterval(() => void heartbeat(), 5000);
+    presenceTimer = setInterval(() => void heartbeat(), 3000);
     void heartbeat();
     // Turn-timeout watcher (1s tick) — drives AI takeover for AFK players.
     if (turnTimer) clearInterval(turnTimer);
-    turnTimer = setInterval(() => checkTurnTimeout(), 1000);
+    turnTimer = setInterval(() => driveAutomation(), 1000);
   }
 
   return {
@@ -1074,7 +1091,8 @@ export const useGame = create<Store>((set, get) => {
       // best-effort: remove my presence row
       const code = get().online?.code;
       const cid = get().online?.clientId;
-      if (supabase && code && cid) void supabase.from("presence").delete().eq("room", code).eq("client", cid);
+      if (supabase && code && cid)
+        supabase.from("presence").delete().eq("room", code).eq("client", cid).then(() => {});
       takeoverForLen = -1;
       if (roomChannel && supabase) {
         supabase.removeChannel(roomChannel);
