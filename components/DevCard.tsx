@@ -76,7 +76,7 @@ export default function DevCard({
       <div className="relative z-10 flex shrink-0 items-start justify-between">
         <span
           className={clsx(
-            "grid h-7 w-7 place-items-center rounded-full font-display text-lg font-bold leading-none",
+            "grid h-9 w-9 place-items-center rounded-full font-display text-2xl font-bold leading-none",
             card.prestige > 0 ? "gold-pill text-gold" : "text-transparent",
           )}
         >
