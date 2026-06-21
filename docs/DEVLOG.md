@@ -4,12 +4,12 @@
 
 ---
 
-## 2026-06-21 — 온라인 멀티플레이 본격화 + 전적/리더보드 + 빠른매칭 + 모바일 반응형
+## 2026-06-21 — 온라인 멀티플레이 본격화 + 전적/리더보드 + 빠른매칭 + 모바일 반응형 + 튜토리얼
 
 ### 요약
 로컬 게임 위주였던 제품에 **Supabase 기반 온라인 멀티플레이**를 전면 도입하고, 연결 안정화
 (재접속·타임아웃·오프라인 대행·호스트 위임), 소셜(채팅·관전·presence), **전적/글로벌 리더보드**,
-**빠른 매칭(2/3/4인)** 까지 붙여 완성도를 끌어올렸다. 마지막으로 **일반 스마트폰 반응형**을 정밀 최적화.
+**빠른 매칭(2/3/4인)**, **인터랙티브 튜토리얼**까지 붙여 완성도를 끌어올렸다. 마지막으로 **일반 스마트폰 반응형**을 정밀 최적화.
 모든 기능은 다중 클라이언트 Playwright 시나리오로 라이브/로컬 검증.
 
 ### 온라인 멀티플레이 (Supabase, 전용 `splendor` 스키마)
@@ -52,6 +52,13 @@
   극단 좁은 커버(<360)는 `min-h`로 늘려 잘림 방지. **4코스트 카드 버튼 잘림 해결**.
 - 커스텀 브레이크포인트 추가: `cm:360px`, `xs:400px`.
 
+### 튜토리얼 (인터랙티브)
+- **1인 샌드박스 + 코치 오버레이**: 실제 보드에서 단계별 안내(환영→토큰→구매→예약→귀족→완료).
+- **자동 진행**: 사용자가 해당 행동(토큰 획득/구매/예약)을 하면 코치가 감지해 다음 단계로. 막히면 "건너뛰기".
+- **스포트라이트**: 현재 단계 대상(공급처/카드/귀족)만 밝게 링 처리(`data-tutorial` 앵커), 나머지 디밍(클릭 통과).
+- 엔진에 **1인 셋업** 허용(솔로/연습용, 실게임 영향 없음). 튜토리얼은 전적기록·저장 제외, 소량 토큰 프리스톡(토큰 한도 안전).
+- `components/TutorialCoach.tsx`, `store/gameStore.ts`(startTutorial/tutorialNext/endTutorial/tutorialStep), 메인 메뉴 "튜토리얼" 버튼.
+
 ### Supabase 스키마 (사용자가 SQL Editor에서 실행)
 - `supabase/splendor_schema.sql`(rooms), `chat_schema.sql`(messages), `presence_schema.sql`(presence), `results_schema.sql`(results).
   전부 RLS 활성 + 코드 기반 접근 정책.
@@ -60,7 +67,7 @@
 - typecheck 클린, vitest(엔진 fuzz + store + **stats 단위**) 통과.
 - **다중 클라이언트 Playwright 시나리오 전부 통과**: `mp-test`(동기화+재게임), `reconnect-test`, `timeout-test`,
   `spectator-test`, `presence-test`(라이브), `failover-test`(오프라인 대행+호스트 위임), `quickmatch-test`,
-  `quickmatch3-test`, `leaderboard-live-test`(라이브 완주→리더보드), `stats-ui/record-test`.
+  `quickmatch3-test`, `leaderboard-live-test`(라이브 완주→리더보드), `stats-ui/record-test`, `tutorial-test`(전 단계 자동진행→종료).
 - 반응형: `fold-test`에 일반 폰(360/390/412/430) 뷰포트 추가 → **9개 뷰포트 overflow 0·에러 0**, 카드 클리핑 0.
 
 ### 주요 버그픽스

@@ -11,7 +11,7 @@
 보드게임 *Splendor*(Marc André)의 디지털 구현. **순수 TS 게임 엔진 + Next.js UI + 휴리스틱 AI + 설치형 PWA + Supabase 온라인 멀티플레이**까지 완성된 풀 제품.
 
 > 최신 추가(2026-06-21): 온라인 **재접속·턴 타임아웃·오프라인 AI 대행·호스트 자동 위임**, **채팅·관전·presence**,
-> **전적/통계 + 글로벌 리더보드**, **빠른 매칭(2/3/4인)**, **OG 공유 이미지**, **일반 스마트폰 반응형 정밀 최적화**.
+> **전적/통계 + 글로벌 리더보드**, **빠른 매칭(2/3/4인)**, **인터랙티브 튜토리얼**, **OG 공유 이미지**, **일반 스마트폰 반응형 정밀 최적화**.
 
 - **플레이 모드**: ① vs AI(난이도 3단계) ② 로컬 핫시트 2~4인 ③ **온라인 멀티(방/링크 공유, 실시간 동기화)**
 - **플랫폼**: 웹(반응형) + **PWA 설치**(갤럭시 폴드 커버/펼침 최적화, 오프라인)
@@ -100,6 +100,7 @@
 | `Chat` | 온라인 채팅 위젯(우하단, 미읽음 배지) |
 | `OnlineLobby` | 빠른 매칭(2/3/4) + 방 만들기/참여/좌석/초대링크/presence |
 | `StatsScreen` | 전적/통계 모달(내 전적 + 글로벌 리더보드 탭) |
+| `TutorialCoach` | 인터랙티브 튜토리얼 코치(단계 안내·스포트라이트·행동 감지 자동진행) |
 | `gems`/`PixelGem`/`PixelScene`/`CardArt` | 보석/코인 비주얼, 픽셀 일러스트, 이미지 폴백 |
 
 ### 구현된 기능(클라이언트)
@@ -173,7 +174,7 @@
 - **vitest**: `lib/engine/*.test.ts`(엣지케이스 PRD 11장 + 2~4인 **fuzz/AI 시뮬레이션 수천 판**, 불변식 검사), `store/*.test.ts`(되돌리기·리플레이·수동지불·속도·예약구매·전원AI 완주), `lib/stats.test.ts`(집계/중복방지).
 - **Playwright 스크립트**(`scripts/`):
   - 반응형: `fold-test`(9뷰포트 overflow0·에러0+스크린샷).
-  - 로컬: `interact-test`, `hover/drawer/howto-check`, `stats-ui-test`, `stats-record-test`.
+  - 로컬: `interact-test`, `hover/drawer/howto-check`, `stats-ui-test`, `stats-record-test`, `tutorial-test`.
   - 온라인: `mp-test`(동기화+재게임), `reconnect-test`, `timeout-test`, `spectator-test`, `presence-test`(라이브), `failover-test`(오프라인 대행+호스트 위임), `quickmatch-test`, `quickmatch3-test`, `leaderboard-live-test`(라이브 완주→리더보드).
 - **CLI**: `simulate.ts`(AI 풀게임 요약), `headtohead.ts`(난이도 승률).
 
@@ -195,7 +196,7 @@ lib/engine/     순수 게임 엔진 + 테스트
 lib/ai/         휴리스틱 AI
 lib/            supabase, stats, leaderboard, assets(자동생성), effects, flyTrigger, sound
 store/          gameStore(로컬+온라인+채팅+presence+전적), flyStore, toastStore + 테스트
-components/     UI 전체(위 표) + Chat, DockDrawer, StatsScreen, OnlineLobby
+components/     UI 전체(위 표) + Chat, DockDrawer, StatsScreen, OnlineLobby, TutorialCoach
 public/         cards/ nobles/ gem/ icons/ + background.webp og.png manifest sw.js
 supabase/       splendor_schema.sql, chat_schema.sql, presence_schema.sql, results_schema.sql
 scripts/        에셋/아이콘/OG 생성, 시뮬, Playwright 검증(온라인/반응형/전적 포함)
@@ -222,6 +223,7 @@ art_src/        원본 이미지 백업(gitignore)
 - [x] 재접속 자동복귀 · 채팅 · 같은 인원 재게임 · OG 공유 이미지
 - [x] 전적/통계(로컬) + 글로벌 리더보드(서버) · 빠른 매칭(2/3/4인)
 - [x] 일반 스마트폰 반응형 최적화(카드 유동/높이 통일, 공급처 1줄)
+- [x] **인터랙티브 튜토리얼**(1인 샌드박스 + 코치 오버레이 + 스포트라이트 + 행동 감지 자동진행)
 
 ### A. 온라인/소셜 강화 (남은 것)
 - [ ] **서버측 규칙 검증**(Supabase Edge Function/RPC로 `append_action` 원자화 + 합법성 검사) → 부정행위 방지(가장 중요)
@@ -260,6 +262,6 @@ art_src/        원본 이미지 백업(gitignore)
 ### F. 빠른 효과 큰 후보 (우선순위 제안 — 갱신)
 1. **서버측 액션 검증(Edge Function)** — 멀티 신뢰성/치팅 방지의 근본 해결(남은 최대 과제)
 2. **계정 로그인** — 크로스기기 통합 전적/리더보드, 닉네임 고정
-3. **튜토리얼/연습 모드** — 신규 유입 친화
-4. **방 데이터 TTL 정리** — 누적 방지(운영 위생)
-5. **시즌 리더보드 / 리플레이 공유** — 재방문 동기
+3. **방 데이터 TTL 정리** — 누적 방지(운영 위생)
+4. **시즌 리더보드 / 리플레이 공유** — 재방문 동기
+5. **튜토리얼 확장** — 토큰 한도·종료조건 등 심화 단계 추가(기본은 완료)
