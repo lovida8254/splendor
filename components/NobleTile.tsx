@@ -78,7 +78,7 @@ export default function NobleRow() {
 
   if (game.nobles.length === 0) return null;
   return (
-    <div className="flex h-full flex-wrap content-stretch items-stretch justify-center gap-2 sm:justify-start">
+    <div data-tutorial="nobles" className="flex h-full flex-wrap content-stretch items-stretch justify-center gap-2 sm:justify-start">
       {game.nobles.map((n) => (
         <NobleTile key={n.id} noble={n} eligible={eligibleIds.has(n.id)} fill />
       ))}

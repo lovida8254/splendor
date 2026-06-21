@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bot, User, Play, RotateCcw, Crown, Wifi } from "lucide-react";
+import { Bot, User, Play, RotateCcw, Crown, Wifi, GraduationCap } from "lucide-react";
 import clsx from "clsx";
 import { AILevel, PlayerConfig } from "@/lib/engine";
 import { useGame, onlineAvailable } from "@/store/gameStore";
@@ -26,6 +26,7 @@ export default function SetupScreen() {
   const resumeGame = useGame((s) => s.resumeGame);
   const hasSave = useGame((s) => s.hasSave);
   const openOnline = useGame((s) => s.openOnline);
+  const startTutorial = useGame((s) => s.startTutorial);
   const [count, setCount] = useState(2);
   const [slots, setSlots] = useState<Slot[]>(defaultSlots());
   const [canResume, setCanResume] = useState(false);
@@ -151,6 +152,13 @@ export default function SetupScreen() {
           <Wifi size={16} /> 온라인 멀티
         </button>
       )}
+
+      <button
+        onClick={startTutorial}
+        className="menu-inset mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-gold transition hover:brightness-110"
+      >
+        <GraduationCap size={16} /> 튜토리얼 (처음이신가요?)
+      </button>
 
       <div className="mt-3 flex gap-3">
         <HowToPlay className="menu-inset flex-1 rounded-xl py-3 font-semibold text-gold transition hover:brightness-110" />

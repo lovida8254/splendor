@@ -25,6 +25,8 @@ export interface NewGameOptions {
 /** Per-player-count setup variables (PRD 2.4). */
 export function setupConfig(playerCount: number): { tokens: number; gold: number; nobles: number } {
   switch (playerCount) {
+    case 1: // solo practice / tutorial sandbox (not a standard player count)
+      return { tokens: 7, gold: 5, nobles: 3 };
     case 2:
       return { tokens: 4, gold: 5, nobles: 3 };
     case 3:

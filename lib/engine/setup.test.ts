@@ -34,8 +34,12 @@ describe("인원별 셋업 (PRD 2.4)", () => {
     expect(setupConfig(4)).toEqual({ tokens: 7, gold: 5, nobles: 5 });
   });
 
-  it("2~4인 외에는 오류", () => {
-    expect(() => setupConfig(1)).toThrow();
+  it("1인은 솔로 연습/튜토리얼용 셋업 허용", () => {
+    expect(setupConfig(1)).toEqual({ tokens: 7, gold: 5, nobles: 3 });
+  });
+
+  it("표준 인원(1~4) 외에는 오류", () => {
+    expect(() => setupConfig(0)).toThrow();
     expect(() => setupConfig(5)).toThrow();
   });
 });

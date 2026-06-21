@@ -39,7 +39,7 @@ export default function TokenBank() {
   const canConfirm = interactive && selectedTotal > 0 && validate(game, candidate).ok;
 
   return (
-    <div className="gold-frame panel-glass flex h-full flex-col rounded-2xl p-3">
+    <div data-tutorial="bank" className="gold-frame panel-glass flex h-full flex-col rounded-2xl p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gold/90">
           <Coins size={14} /> 공급처

@@ -13,6 +13,7 @@ import { DiscardModal, GameOverModal, NobleModal, PurchaseModal } from "./Modals
 import ReplayBar from "./ReplayBar";
 import FlyLayer from "./FlyLayer";
 import Toasts from "./Toasts";
+import TutorialCoach from "./TutorialCoach";
 
 export default function GameBoard() {
   const game = useGame((s) => s.game)!;
@@ -49,7 +50,7 @@ export default function GameBoard() {
       </div>
 
       {/* card rows (full width) */}
-      <div>
+      <div data-tutorial="cards">
         {levelsTopDown.map((lvl) => (
           <CardRow key={lvl} level={lvl} />
         ))}
@@ -74,6 +75,7 @@ export default function GameBoard() {
       <ReplayBar />
       <FlyLayer />
       <Toasts />
+      <TutorialCoach />
     </div>
   );
 }

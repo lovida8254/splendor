@@ -124,6 +124,12 @@ interface Store {
   hasSave: () => boolean;
   abandon: () => void;
 
+  // tutorial (1-player sandbox + coach overlay)
+  tutorialStep: number | null;
+  startTutorial: () => void;
+  tutorialNext: () => void;
+  endTutorial: () => void;
+
   toggleToken: (color: GemColor) => void;
   clearSelection: () => void;
   confirmTake: () => void;
@@ -248,6 +254,7 @@ export const useGame = create<Store>((set, get) => {
   function recordFinish(game: GameState | null) {
     if (!game || game.phase !== "finished" || !game.winnerId) return;
     const s = get();
+    if (s.tutorialStep !== null) return; // don't record tutorial games
     const seed = s.online?.config?.seed ?? s.config?.seed ?? 0;
     const sig = `${seed}:${game.winnerId}:${game.turnCount}`;
     let mode: StatMode;
@@ -316,7 +323,7 @@ export const useGame = create<Store>((set, get) => {
     const history = [...s.history, next];
     set({ game: next, actions, history, selection: { tokens: {} }, message: null });
     runEffects(s.game, next, action);
-    if (s.config) persist(s.config, actions);
+    if (s.config && s.tutorialStep === null) persist(s.config, actions);
     recordFinish(next);
     scheduleAI(animMs);
   }
@@ -726,6 +733,7 @@ export const useGame = create<Store>((set, get) => {
     replayPlaying: false,
     online: null,
     matching: false,
+    tutorialStep: null,
     chat: [],
 
     startGame(players) {
@@ -798,6 +806,57 @@ export const useGame = create<Store>((set, get) => {
         replayActive: false,
         replayIndex: 0,
         replayPlaying: false,
+      });
+    },
+
+    startTutorial() {
+      clearTimers();
+      unlockAudio();
+      const seed = 4242;
+      const players: PlayerConfig[] = [{ name: "나", isAI: false }];
+      const game = newGame({ players, seed, startPlayerIndex: 0 });
+      // Pre-stock the learner a little so buying is possible after taking 3 tokens
+      // (kept low so taking 3 more stays under the 10-token limit → no forced discard).
+      for (const c of GEM_COLORS) {
+        game.players[0].tokens[c] = 1;
+        game.pool[c] = Math.max(0, game.pool[c] - 1);
+      }
+      set({
+        config: { players, seed },
+        actions: [],
+        history: [game],
+        game,
+        rng: mulberry32((seed ^ 0x9e3779b9) >>> 0),
+        selection: { tokens: {} },
+        message: null,
+        purchaseSource: null,
+        replayActive: false,
+        replayIndex: 0,
+        replayPlaying: false,
+        online: null,
+        tutorialStep: 0,
+      });
+    },
+
+    tutorialNext() {
+      set((s) => (s.tutorialStep == null ? s : { tutorialStep: s.tutorialStep + 1 }));
+    },
+
+    endTutorial() {
+      clearTimers();
+      set({
+        config: null,
+        actions: [],
+        history: [],
+        game: null,
+        selection: { tokens: {} },
+        message: null,
+        aiThinking: false,
+        purchaseSource: null,
+        replayActive: false,
+        replayIndex: 0,
+        replayPlaying: false,
+        tutorialStep: null,
       });
     },
 
