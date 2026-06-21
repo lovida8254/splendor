@@ -815,12 +815,21 @@ export const useGame = create<Store>((set, get) => {
       const seed = 4242;
       const players: PlayerConfig[] = [{ name: "나", isAI: false }];
       const game = newGame({ players, seed, startPlayerIndex: 0 });
-      // Pre-stock the learner a little so buying is possible after taking 3 tokens
-      // (kept low so taking 3 more stays under the 10-token limit → no forced discard).
+      // Pre-stock the learner so a card is ALWAYS purchasable at step ②, no matter
+      // which 3 tokens they take first. Find the cheapest visible Level-1 card and give
+      // exactly enough color tokens to afford it, plus 2 gold as a forgiving buffer.
+      // The cheapest L1 card is ≤5 tokens, so total stays low and taking 3 more never
+      // trips the 10-token limit → no surprise forced-discard mid-tutorial.
+      const lvl1 = game.board[1].filter((c): c is Card => c !== null);
+      const totalCost = (c: Card) => GEM_COLORS.reduce((s, g) => s + c.cost[g], 0);
+      const target = lvl1.reduce((a, b) => (totalCost(b) < totalCost(a) ? b : a));
       for (const c of GEM_COLORS) {
-        game.players[0].tokens[c] = 1;
-        game.pool[c] = Math.max(0, game.pool[c] - 1);
+        const give = target.cost[c];
+        game.players[0].tokens[c] = give;
+        game.pool[c] = Math.max(0, game.pool[c] - give);
       }
+      game.players[0].tokens.gold = 2;
+      game.pool.gold = Math.max(0, game.pool.gold - 2);
       set({
         config: { players, seed },
         actions: [],
