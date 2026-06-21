@@ -22,7 +22,7 @@ import { NobleTile } from "./NobleTile";
 
 function Backdrop({ children, onClose }: { children: React.ReactNode; onClose?: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/65 p-4 animate-fadein" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] grid place-items-center bg-black/65 p-4 animate-fadein" onClick={onClose}>
       <div
         className="gold-frame panel-glass w-full max-w-md rounded-2xl p-5"
         onClick={(e) => e.stopPropagation()}

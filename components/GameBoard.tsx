@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { CARD_LEVELS } from "@/lib/engine";
 import { useGame } from "@/store/gameStore";
 import TurnBar from "./TurnBar";
@@ -18,10 +19,18 @@ import TutorialCoach from "./TutorialCoach";
 export default function GameBoard() {
   const game = useGame((s) => s.game)!;
   const replayActive = useGame((s) => s.replayActive);
+  const inTutorial = useGame((s) => s.tutorialStep !== null);
   const levelsTopDown = [...CARD_LEVELS].reverse(); // 3,2,1
 
   return (
-    <div className="safe-area mx-auto max-w-[1320px] px-2 py-3 sm:px-5 sm:py-4">
+    <div
+      className={clsx(
+        "safe-area mx-auto max-w-[1320px] px-2 py-3 sm:px-5 sm:py-4",
+        // during the tutorial the coach card is pinned to the bottom — add scroll
+        // room so the bottom (Level-1) card row can clear it and stay tappable.
+        inTutorial && "pb-[260px]",
+      )}
+    >
       <TurnBar />
 
       {/* All players' holdings + score, visible at the top (reference layout) */}

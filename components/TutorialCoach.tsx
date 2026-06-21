@@ -61,6 +61,10 @@ export default function TutorialCoach() {
   const next = useGame((s) => s.tutorialNext);
   const end = useGame((s) => s.endTutorial);
   const [rect, setRect] = useState<Rect | null>(null);
+  // when the spotlighted region reaches into the lower screen (e.g. the card
+  // rows), dock the coach card at the TOP so it never covers the cards' buy
+  // buttons — otherwise it stays at the bottom.
+  const [dockTop, setDockTop] = useState(false);
 
   const cur = step != null ? STEPS[step] : null;
 
@@ -77,6 +81,7 @@ export default function TutorialCoach() {
     const sel = cur?.highlight;
     if (!sel) {
       setRect(null);
+      setDockTop(false);
       return;
     }
     const find = () => document.querySelector(`[data-tutorial="${sel}"]`);
@@ -85,6 +90,9 @@ export default function TutorialCoach() {
       if (el) {
         const r = el.getBoundingClientRect();
         setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+        // if the highlight reaches into the bottom ~45% of the viewport, the
+        // bottom-docked coach card would cover it → flip the coach to the top.
+        setDockTop(r.top + r.height > window.innerHeight * 0.55);
       }
     };
     find()?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -122,8 +130,15 @@ export default function TutorialCoach() {
       {/* dim backdrop when no specific target (welcome/finish) */}
       {!rect && <div className="pointer-events-none fixed inset-0 z-[80] bg-black/45" />}
 
-      {/* coach card */}
-      <div className="fixed inset-x-0 bottom-0 z-[81] flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      {/* coach card — docks at top when the spotlight is in the lower screen */}
+      <div
+        className={clsx(
+          "fixed inset-x-0 z-[81] flex justify-center p-3",
+          dockTop
+            ? "top-0 pt-[max(0.75rem,env(safe-area-inset-top))]"
+            : "bottom-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+        )}
+      >
         <div className="gold-frame panel-glass w-full max-w-md rounded-2xl p-4 shadow-2xl animate-fadein">
           <div className="mb-2 flex items-center justify-between">
             <span className="flex items-center gap-1.5 font-display text-sm font-bold text-gold">
