@@ -124,6 +124,22 @@ body {
 }
 .animate-affordable { animation: goldpulse 2.4s ease-in-out infinite; }
 
+/* Buyable card: a gentle continuous rock ("흔들흔들") + slight bob on top of the
+   gold glow pulse, so it's clearly eye-catching. Pauses on hover so the card's
+   hover-lift transform takes over. */
+@keyframes cardwiggle {
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50%      { transform: rotate(2deg) translateY(-3px); }
+}
+.animate-affordable-card {
+  transform-origin: bottom center;
+  animation: goldpulse 2.4s ease-in-out infinite, cardwiggle 1.15s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* keep the gentle glow, drop the motion */
+  .animate-affordable-card { animation: goldpulse 2.4s ease-in-out infinite; }
+}
+
 @keyframes scorepop {
   0% { transform: scale(1); }
   35% { transform: scale(1.35); color: #f4e3ad; }
