@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-06-22 — 구매 가능 카드 흔들림 모션
+
+### UI/UX
+- **구매 가능 카드 강조 강화**(38485e5): 기존엔 색 테두리 글로우만 펄스 → 더 눈에 띄도록 **부드러운 좌우 흔들림**
+  (±2° 회전 + 살짝 위아래 bob, 1.15s 무한)을 글로우와 함께 적용. 카드 전용 `animate-affordable-card` 신설
+  (`goldpulse` + `cardwiggle`, `transform-origin: bottom center`). **hover 시 흔들림 정지**로 기존 hover 들어올림 보존,
+  `prefers-reduced-motion` 사용자는 글로우만 유지(접근성). 귀족 타일은 자동 획득이라 기존 글로우 유지(흔들림 미적용).
+  `app/globals.css`, `components/DevCard.tsx`.
+- 검증: 모바일 412×915 실제 렌더에서 연속 transform 변화 확인(흔들림 동작), 페이지 에러 0, typecheck 클린.
+
+---
+
 ## 2026-06-21 — 온라인 멀티플레이 본격화 + 전적/리더보드 + 빠른매칭 + 모바일 반응형 + 튜토리얼
 
 ### 요약
